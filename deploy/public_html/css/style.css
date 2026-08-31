@@ -1,0 +1,186 @@
+/* =====================================================================
+   DIY Creator Starter Toolkit  ·  style.css
+   Tokens and layout. Derived from WyzLab Studio Originals Brand
+   Guidelines v2.0 (April 2026). No hard-coded hex outside :root.
+   ===================================================================== */
+
+:root {
+  /* ── Brand palette (Studio Originals, brand file section 07) ───────── */
+  --wyz-blue:       #1C8BF5;   /* Master Blue, primary, dominant UI */
+  --wyz-gold:       #FFB81C;   /* Gold, badges, completion, milestones */
+  --wyz-orange:     #FF6B35;   /* Orange, CTAs, action, current task */
+  --wyz-navy:       #003D7A;   /* Navy, structure, dense text, containers */
+  --wyz-cyan:       #00B8E6;   /* Cyan, links, cross-product accents */
+  --wyz-lime:       #7FE3BF;   /* Lime, progress, success states */
+
+  /* ── Neutrals (WyzLab master neutrals) ─────────────────────────────── */
+  --white:          #FFFFFF;
+  --light-gray:     #F5F7FA;
+  --mid-gray:       #CBD5E0;
+  --dark-gray:      #2D3748;
+  --black:          #111827;
+
+  /* ── Semantic roles ────────────────────────────────────────────────── */
+  --bg:             var(--light-gray);
+  --surface:        var(--white);
+  --ink:            var(--dark-gray);
+  --ink-strong:     var(--navy, var(--wyz-navy));
+  --heading-ink:    var(--wyz-navy);
+  --muted:          #64748B;
+  --link:           var(--wyz-blue);
+  --link-hover:     var(--wyz-navy);
+  --border:         var(--mid-gray);
+  --focus-ring:     var(--wyz-cyan);
+
+  --success:        var(--wyz-lime);
+  --success-ink:    #0F5132;
+  --track:          #E2E8F0;
+
+  /* ── Type ──────────────────────────────────────────────────────────── */
+  --font-heading:   'Montserrat', 'Poppins', 'Segoe UI', system-ui, sans-serif;
+  --font-body:      'Inter', 'Segoe UI', system-ui, sans-serif;
+
+  /* ── Spacing scale ─────────────────────────────────────────────────── */
+  --space-xs:  4px;
+  --space-sm:  8px;
+  --space-md:  16px;
+  --space-lg:  32px;
+  --space-xl:  64px;
+  --space-2xl: 96px;
+
+  /* ── Radius ────────────────────────────────────────────────────────── */
+  --radius-sm:  6px;
+  --radius-md:  12px;
+  --radius-lg:  20px;
+  --radius-pill: 999px;
+
+  /* ── Shadows ───────────────────────────────────────────────────────── */
+  --shadow-card:  0 4px 20px rgba(0, 61, 122, 0.08);
+  --shadow-hover: 0 8px 32px rgba(28, 139, 245, 0.18);
+
+  /* ── Layout ────────────────────────────────────────────────────────── */
+  --wrap:       1120px;
+  --wrap-narrow: 640px;
+  --tap-min:    48px;   /* minimum tap target, mobile constraint */
+}
+
+/* ── Reset-ish base ──────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-heading);
+  color: var(--heading-ink);
+  line-height: 1.2;
+  margin: 0 0 var(--space-md);
+  font-weight: 700;
+}
+h1 { font-size: clamp(28px, 6vw, 44px); }
+h2 { font-size: clamp(22px, 4.5vw, 32px); }
+h3 { font-size: clamp(18px, 3.5vw, 22px); }
+
+p { margin: 0 0 var(--space-md); }
+
+a { color: var(--link); text-decoration: none; }
+a:hover { color: var(--link-hover); text-decoration: underline; }
+
+img { max-width: 100%; height: auto; display: block; }
+
+strong { font-weight: 700; color: var(--ink-strong); }
+
+/* ── Focus visibility (accessibility) ────────────────────────────────── */
+:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.skip-link {
+  position: absolute; left: -9999px; top: 0;
+  background: var(--wyz-navy); color: var(--white);
+  padding: var(--space-sm) var(--space-md); z-index: 1000;
+  border-radius: 0 0 var(--radius-sm) 0;
+}
+.skip-link:focus { left: 0; }
+
+/* ── Layout primitives ───────────────────────────────────────────────── */
+.wrap {
+  width: 100%;
+  max-width: var(--wrap);
+  margin: 0 auto;
+  padding-inline: var(--space-md);
+}
+.wrap--narrow { max-width: var(--wrap-narrow); }
+
+.site-main {
+  min-height: 60vh;
+  padding-block: var(--space-lg);
+}
+
+/* Wide content scrolls inside its own container, never the page body. */
+.scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* ── Header ──────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--surface);
+  box-shadow: 0 2px 12px rgba(0, 61, 122, 0.07);
+}
+.site-header__inner {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--space-md);
+  min-height: 64px;
+}
+.site-header__brand {
+  display: inline-flex; align-items: center; gap: var(--space-sm);
+  color: var(--wyz-navy); text-decoration: none;
+}
+.site-header__brand:hover { text-decoration: none; }
+.site-header__title {
+  font-family: var(--font-heading); font-weight: 700; font-size: 16px;
+  color: var(--wyz-navy);
+}
+.site-header__academy { color: var(--muted); font-size: 14px; }
+.site-header__nav { display: flex; align-items: center; gap: var(--space-md); }
+.site-header__nav a { font-weight: 600; color: var(--dark-gray); }
+
+/* ── Footer ──────────────────────────────────────────────────────────── */
+.site-footer {
+  background: var(--wyz-navy);
+  color: var(--white);
+  margin-top: var(--space-2xl);
+  padding-block: var(--space-lg);
+}
+.site-footer a { color: var(--wyz-lime); }
+.site-footer__inner {
+  display: flex; flex-wrap: wrap; gap: var(--space-lg);
+  justify-content: space-between;
+}
+.site-footer__brand strong { color: var(--white); font-family: var(--font-heading); }
+.site-footer__tag { color: var(--wyz-gold); margin: var(--space-xs) 0 0; }
+.site-footer__copy { color: rgba(255, 255, 255, 0.7); font-size: 13px; }
+
+/* ── Utility ─────────────────────────────────────────────────────────── */
+.text-center { text-align: center; }
+.muted { color: var(--muted); }
+.stack > * + * { margin-top: var(--space-md); }
+.mt-lg { margin-top: var(--space-lg); }
+[hidden] { display: none !important; }
+
+/* ── Breakpoints ─────────────────────────────────────────────────────── */
+@media (min-width: 768px) {
+  body { font-size: 17px; }
+  .site-header__title { font-size: 18px; }
+  .site-main { padding-block: var(--space-xl); }
+}

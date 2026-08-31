@@ -1,0 +1,18 @@
+# OS / editor junk
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# Local filled-in secrets must never be committed. The versioned config files
+# hold PLACEHOLDERS only. If you ever keep a filled copy locally, name it
+# *.local.php and it stays out of git.
+deploy/config/*.local.php
+
+# PHP / Composer (PHPMailer vendor added at Stage E)
+/vendor/
+composer.lock
+
+# Logs
+*.log
+node_modules/

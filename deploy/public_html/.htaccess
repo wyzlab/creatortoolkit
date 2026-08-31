@@ -1,0 +1,50 @@
+# =====================================================================
+#  DIY Creator Starter Toolkit  ·  public_html/.htaccess
+#  Hostinger (Apache). Forces HTTPS, sets security headers, hides files.
+# =====================================================================
+
+# ── Force HTTPS ──────────────────────────────────────────────────────
+RewriteEngine On
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# ── Default document ─────────────────────────────────────────────────
+DirectoryIndex index.php
+
+# ── Custom error pages ───────────────────────────────────────────────
+ErrorDocument 403 /403.html
+ErrorDocument 404 /404.html
+
+# ── Do not list directories ──────────────────────────────────────────
+Options -Indexes
+
+# ── Block dotfiles and sensitive extensions (config lives above web
+#    root already, this is belt and suspenders) ───────────────────────
+<FilesMatch "^\.">
+  Require all denied
+</FilesMatch>
+<FilesMatch "\.(md|sql|log|ini|sh|bak|json)$">
+  Require all denied
+</FilesMatch>
+
+# ── Security headers (mod_headers). CSP is also set per-request in PHP
+#    with a nonce; this covers static responses. ───────────────────────
+<IfModule mod_headers.c>
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  # HSTS: enable once the certificate is confirmed good on the subdomain.
+  # Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+</IfModule>
+
+# ── Cache static assets ──────────────────────────────────────────────
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/css "access plus 1 week"
+  ExpiresByType application/javascript "access plus 1 week"
+  ExpiresByType image/png "access plus 1 month"
+  ExpiresByType image/svg+xml "access plus 1 month"
+</IfModule>
+
+# The ten source PDFs are NOT under public_html. They are streamed only by
+# /api/download-pdf.php after a session and unlock check.
