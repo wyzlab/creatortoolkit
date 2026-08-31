@@ -42,6 +42,9 @@ $loggedIn  = function_exists('is_logged_in') ? is_logged_in() : false;
       <?php if ($loggedIn): ?>
         <nav class="site-header__nav" aria-label="Account">
           <a href="/dashboard.php">Dashboard</a>
+          <?php if (function_exists('current_user') && (current_user()['role'] ?? '') === 'admin'): ?>
+            <a href="/admin/">Admin</a>
+          <?php endif; ?>
           <button type="button" class="btn btn--ghost btn--sm" data-action="logout">Log out</button>
         </nav>
       <?php else: ?>

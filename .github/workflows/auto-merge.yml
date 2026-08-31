@@ -1,0 +1,42 @@
+name: Auto-merge on green
+
+# When the CI checks pass on a pull request, this merges it into main and kicks
+# off the deploy, so you never have to click Merge. If CI is red, nothing merges.
+#
+# It only acts on CI runs from a pull request that succeeded. It must live on
+# the main branch to fire (that is how workflow_run works), so the FIRST time you
+# still merge one PR by hand to put this file on main; after that it is automatic.
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+jobs:
+  automerge:
+    if: >
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge the PR that passed CI, then deploy
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          HEAD: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          set -e
+          PR=$(gh pr list --repo "$REPO" --head "$HEAD" --state open --json number --jq '.[0].number // empty')
+          if [ -z "$PR" ]; then
+            echo "No open PR for branch $HEAD; nothing to merge."
+            exit 0
+          fi
+          echo "CI passed for PR #$PR on $HEAD. Merging."
+          gh pr merge "$PR" --repo "$REPO" --merge
+          echo "Merged. Triggering deploy to Hostinger."
+          gh workflow run deploy.yml --repo "$REPO" --ref main
