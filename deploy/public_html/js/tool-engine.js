@@ -71,6 +71,22 @@ export function mountTool(config, options) {
   }
 }
 
+/**
+ * Auto-boot: the tool page embeds its definition as
+ * <script type="application/json" id="tool-config">{...}</script> next to a
+ * [data-tool-root]. The engine reads it and mounts, so no inline JS is needed
+ * on the page (CSP stays strict) and PHP is the single source of the config.
+ */
+function autoBoot() {
+  const holder = document.getElementById('tool-config');
+  const root = document.querySelector('[data-tool-root]');
+  if (!holder || !root) return;
+  let config;
+  try { config = JSON.parse(holder.textContent); }
+  catch (e) { console.error('tool-engine: bad tool-config JSON', e); return; }
+  mountTool(config);
+}
+
 class ToolEngine {
   constructor(config, root) {
     this.cfg = config;
@@ -136,8 +152,30 @@ class ToolEngine {
     this.elSaveFlag = h('div', { class: 'autosave-flag', 'aria-live': 'polite' });
 
     this.root.appendChild(h('div', { class: 'tool-shell' }, [
-      this.elHead, this.elNotice, this.elStep, this.elSaveFlag
+      this.elHead, this.elNotice, this.elStep, this.elSaveFlag,
+      this.renderWyzaiHelper()
     ]));
+  }
+
+  /** A "Use AI to help" card with the tool's pre-filled prompt and a copy button. */
+  renderWyzaiHelper() {
+    const prompt = this.cfg.wyzaiPrompt;
+    if (!prompt) return document.createComment('no-wyzai');
+    const ta = h('textarea', { class: 'textarea wyzai__prompt', readonly: true, rows: 4 });
+    ta.value = prompt;
+    const copyBtn = h('button', { class: 'btn btn--sm btn--ghost', type: 'button',
+      onClick: async () => {
+        try { await navigator.clipboard.writeText(prompt); copyBtn.textContent = 'Copied'; }
+        catch (e) { ta.select(); }
+        setTimeout(() => { copyBtn.textContent = 'Copy this prompt'; }, 1500);
+      }
+    }, ['Copy this prompt']);
+    return h('details', { class: 'wyzai' }, [
+      h('summary', {}, ['Want a thinking partner? Use AI to help.']),
+      h('p', { class: 'muted', text: 'Paste this into the WyzAI Assistant or any AI you already use. Answer one question at a time.' }),
+      ta,
+      copyBtn
+    ]);
   }
 
   notice(msg, kind) {
@@ -473,8 +511,15 @@ class ToolEngine {
       ]));
     }
     if (r && r.gate_complete) {
-      box.appendChild(h('div', { class: 'notice notice--success' }, [
-        'You finished this gate. The next one is open on your dashboard.'
+      const msg = h('div', { class: 'notice notice--success' }, [
+        h('p', { text: 'You finished this gate. Your summary, your coach code, and your PDF downloads are ready.' })
+      ]);
+      if (r.coach_name) {
+        msg.appendChild(h('p', { text: 'Say hello to your ' + r.coach_name + '.' }));
+      }
+      box.appendChild(msg);
+      box.appendChild(h('p', {}, [
+        h('a', { class: 'btn btn--cta', href: '/results/gate.php?gate=' + this.cfg.gate }, ['See your gate summary'])
       ]));
     }
     box.appendChild(h('p', { class: 'mt-lg' }, [
@@ -489,3 +534,15 @@ class ToolEngine {
 /* Also expose on window for non-module callers / debugging. */
 window.ToolEngine = { mountTool };
 export default { mountTool };
+
+/* Boot from the page's embedded config. Placed after the class is defined so
+   it is never referenced inside its temporal dead zone. We wait for
+   DOMContentLoaded so main.js (a deferred classic script that sets
+   window.Toolkit) has run before the engine's first API call. */
+if (document.readyState === 'complete') {
+  autoBoot();                       // DOMContentLoaded already fired
+} else {
+  // 'loading' or 'interactive': wait for DOMContentLoaded, by which point the
+  // deferred main.js has run and window.Toolkit exists.
+  document.addEventListener('DOMContentLoaded', autoBoot, { once: true });
+}

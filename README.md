@@ -35,7 +35,7 @@ _OUTPUT/                    dated deliverables: deployment guide, test reports, 
 | Stage | Scope | Status |
 |---|---|---|
 | A | Foundation: schema, auth, guard, engine core, CSS, dashboard | Done, verified |
-| B | Gate 1 tools: Avatar Kit, Clarity Framework, Validation Check | Next |
+| B | Gate 1 tools: Avatar Kit, Clarity Framework, Validation Check | Done, verified |
 | C | Gate 2 tools: Offer, Idea Sparker, 20-Point, Starter Kit | |
 | D | Gate 3 tools: Pricing, Launch Checklist, Discovery Script | |
 | E | Full package, admin, live email, AI synthesis, deliverability | |
