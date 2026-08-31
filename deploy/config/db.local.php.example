@@ -1,0 +1,10 @@
+<?php
+// Copy this file to db.local.php (same folder) and fill in your Hostinger
+// MySQL values. db.local.php is gitignored, so it survives every git pull.
+return [
+    'host'    => 'localhost',
+    'name'    => 'uXXXXXXXX_toolkit',   // your Hostinger database name
+    'user'    => 'uXXXXXXXX_toolkit',   // your Hostinger database user
+    'pass'    => 'your-db-password',
+    'charset' => 'utf8mb4',
+];

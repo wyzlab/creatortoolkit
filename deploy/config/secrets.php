@@ -12,6 +12,13 @@
  * Run it twice, paste one into each blank below.
  */
 
+// GIT DEPLOY: put your real values in secrets.local.php (gitignored) so a git
+// pull never overwrites them. If that file exists, it is used instead.
+$local = __DIR__ . '/secrets.local.php';
+if (is_file($local)) {
+    return require $local;
+}
+
 return [
     // Peppers the access-code HMAC (Technical Spec 2.1). SET ONCE, NEVER CHANGE.
     'code_pepper' => 'REPLACE_WITH_64_HEX_CHARS_CODE_PEPPER',   // PLACEHOLDER

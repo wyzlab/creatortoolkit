@@ -10,6 +10,12 @@
  * the ai_log table, not by trusting this config.
  */
 
+// GIT DEPLOY: real provider key goes in ai.local.php (gitignored).
+$local = __DIR__ . '/ai.local.php';
+if (is_file($local)) {
+    return require $local;
+}
+
 return [
     'enabled'  => false,                     // keep false until Stage E
     'provider' => 'anthropic',               // PLACEHOLDER — provider name

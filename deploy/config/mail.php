@@ -10,6 +10,12 @@
  * hand-off before you trust it.
  */
 
+// GIT DEPLOY: real SMTP values go in mail.local.php (gitignored).
+$local = __DIR__ . '/mail.local.php';
+if (is_file($local)) {
+    return require $local;
+}
+
 return [
     'enabled'    => false,                       // keep false until Stage E creds are in and tested
     'host'       => 'REPLACE_SMTP_HOST',         // PLACEHOLDER — EmailIt SMTP host

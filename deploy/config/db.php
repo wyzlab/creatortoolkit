@@ -12,6 +12,14 @@
  *   - DB_HOST : 'localhost' on Hostinger shared hosting
  */
 
+// GIT DEPLOY: put your real credentials in db.local.php (gitignored) so a
+// git pull never overwrites them. If that file exists, it is used instead of
+// the placeholders below. Copy this block into db.local.php and fill it in.
+$local = __DIR__ . '/db.local.php';
+if (is_file($local)) {
+    return require $local;
+}
+
 return [
     'host'    => 'localhost',              // PLACEHOLDER — Hostinger shared hosting uses 'localhost'
     'name'    => 'REPLACE_DB_NAME',        // PLACEHOLDER — Hostinger MySQL database name
