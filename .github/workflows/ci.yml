@@ -80,3 +80,58 @@ jobs:
           BASE: http://127.0.0.1:8899
           CODE: ${{ steps.code.outputs.value }}
         run: bash tests/smoke.sh
+
+  browser:
+    name: Browser test (Playwright)
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: toolkit
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s --health-timeout=5s --health-retries=15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo, pdo_mysql, mysqli
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Playwright (Chromium)
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.48.0 --no-save
+          npx playwright install --with-deps chromium
+      - name: Write test config
+        run: |
+          cat > deploy/config/db.local.php <<'PHP'
+          <?php
+          return ['host'=>'127.0.0.1','port'=>3306,'name'=>'toolkit','user'=>'root','pass'=>'root','charset'=>'utf8mb4'];
+          PHP
+          php -r 'printf("<?php\nreturn [\n  \"code_pepper\" => %s,\n  \"csrf_salt\"   => %s,\n  \"ip_pepper\"   => %s,\n];\n", var_export(bin2hex(random_bytes(32)),true), var_export(bin2hex(random_bytes(32)),true), var_export(bin2hex(random_bytes(32)),true));' > deploy/config/secrets.local.php
+      - name: Load schema
+        run: |
+          for i in $(seq 1 30); do mysql -h 127.0.0.1 -P 3306 -uroot -proot -e "SELECT 1" && break; sleep 2; done
+          mysql -h 127.0.0.1 -P 3306 -uroot -proot toolkit < deploy/sql/schema.sql
+          mysql -h 127.0.0.1 -P 3306 -uroot -proot toolkit < deploy/sql/seed.sql
+      - name: Mint a code and start the app
+        id: prep
+        run: |
+          php deploy/tools/gen-codes.php 1 ci > codes.txt
+          echo "value=$(sed -n '3p' codes.txt)" >> "$GITHUB_OUTPUT"
+          php -S 127.0.0.1:8899 -t deploy/public_html >/tmp/php.log 2>&1 &
+          for i in $(seq 1 15); do curl -sf -o /dev/null http://127.0.0.1:8899/index.php && break; sleep 1; done
+      - name: Run browser test
+        env:
+          BASE: http://127.0.0.1:8899
+          CODE: ${{ steps.prep.outputs.value }}
+        run: node tests/browser.mjs

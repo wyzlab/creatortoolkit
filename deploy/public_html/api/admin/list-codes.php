@@ -1,0 +1,57 @@
+<?php
+/**
+ * GET /api/admin/list-codes.php?status=&limit=&offset=  ->  {codes:[...], total}
+ * Admin only. Never returns plaintext codes (they are not stored), only the
+ * last 4, status, batch, and who they were issued to or claimed by.
+ */
+
+declare(strict_types=1);
+require_once __DIR__ . '/../../inc/bootstrap.php';
+require_once __DIR__ . '/../../inc/guard.php';
+
+api_require_admin();
+$pdo = db();
+
+$status = (string)($_GET['status'] ?? '');
+$limit  = max(1, min((int)($_GET['limit'] ?? 50), 200));
+$offset = max(0, (int)($_GET['offset'] ?? 0));
+
+$where = '';
+$params = [];
+if (in_array($status, ['unclaimed', 'claimed', 'revoked', 'expired'], true)) {
+    $where = 'WHERE ac.status = ?';
+    $params[] = $status;
+}
+
+$total = (int)($where
+    ? (function () use ($pdo, $params) {
+        $q = $pdo->prepare('SELECT COUNT(*) FROM access_codes ac ' . 'WHERE ac.status = ?');
+        $q->execute($params);
+        return $q->fetchColumn();
+      })()
+    : $pdo->query('SELECT COUNT(*) FROM access_codes')->fetchColumn());
+
+$sql = "SELECT ac.code_display, ac.batch_label, ac.issued_to_email, ac.status,
+               ac.created_at, ac.claimed_at, u.email AS claimed_email
+          FROM access_codes ac
+          LEFT JOIN users u ON u.id = ac.claimed_by_user_id
+          $where
+         ORDER BY ac.id DESC
+         LIMIT $limit OFFSET $offset";
+$stmt = $pdo->prepare($sql);
+$stmt->execute($params);
+
+$codes = [];
+foreach ($stmt->fetchAll() as $r) {
+    $codes[] = [
+        'display' => '****-' . $r['code_display'],
+        'batch' => $r['batch_label'],
+        'issued_to' => $r['issued_to_email'],
+        'status' => $r['status'],
+        'claimed_by' => $r['claimed_email'],
+        'created_at' => $r['created_at'],
+        'claimed_at' => $r['claimed_at'],
+    ];
+}
+
+json_out(['codes' => $codes, 'total' => $total, 'limit' => $limit, 'offset' => $offset]);

@@ -476,9 +476,48 @@ class ToolEngine {
     }
   }
 
+  /* Is a value empty? Matches the server: whitespace-only counts as empty,
+     and a checklist with nothing ticked counts as empty. */
+  isEmptyValue(v) {
+    if (v == null) return true;
+    if (typeof v === 'string') return v.trim() === '';
+    if (typeof v === 'object') return Object.keys(v).every((k) => !v[k]);
+    return false;
+  }
+
+  /* Check every required field across all steps. Returns {step, key, label}
+     of the first empty one, or null. Lets us point the learner straight at it
+     instead of failing on the last step with a vague message. */
+  firstMissingRequired() {
+    for (let i = 0; i < this.cfg.steps.length; i++) {
+      for (const f of (this.cfg.steps[i].fields || [])) {
+        if (f.required && this.isEmptyValue(this.state.answers[f.key])) {
+          return { step: i + 1, key: f.key, label: f.label || 'This field' };
+        }
+      }
+    }
+    return null;
+  }
+
   /* ── completion ────────────────────────────────────────────────────── */
   async complete() {
-    if (!this.validateStep()) return;
+    // Check ALL required fields, not just the current step, and jump to the
+    // first one that is still empty.
+    const missing = this.firstMissingRequired();
+    if (missing) {
+      this.state.currentStep = missing.step;
+      this.renderStep();
+      const wrap = this.elStep.querySelector('[data-field="' + missing.key + '"]');
+      this.showFieldError(wrap, 'This one is needed to finish.');
+      if (wrap) {
+        wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const input = wrap.querySelector('input, textarea, select');
+        if (input) input.focus();
+      }
+      this.notice('One answer is still needed: "' + missing.label + '". I brought you to it and marked it below.', 'error');
+      return;
+    }
+
     await this.saveNow();
     try {
       const r = await api().apiPost('/api/complete-tool.php', {
@@ -487,10 +526,27 @@ class ToolEngine {
         profile_version: this.state.profileVersion
       });
       this.state.completed = true;
+      this.notice('', null);
       this.renderResult(r);
     } catch (e) {
+      // Server backstop: if it still reports missing fields, guide there too.
+      const miss = e.data && Array.isArray(e.data.missing) ? e.data.missing[0] : null;
+      if (miss) {
+        const step = this.stepOfField(miss);
+        if (step) { this.state.currentStep = step; this.renderStep();
+          const wrap = this.elStep.querySelector('[data-field="' + miss + '"]');
+          this.showFieldError(wrap, 'This one is needed to finish.');
+        }
+      }
       this.notice(e.message, 'error');
     }
+  }
+
+  stepOfField(key) {
+    for (let i = 0; i < this.cfg.steps.length; i++) {
+      if ((this.cfg.steps[i].fields || []).some((f) => f.key === key)) return i + 1;
+    }
+    return null;
   }
 
   renderResult(r) {

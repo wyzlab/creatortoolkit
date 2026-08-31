@@ -29,4 +29,15 @@ return [
     // Peppers the identifiers written to the rate_limits table so raw IPs
     // are never stored in plaintext.
     'ip_pepper'   => 'REPLACE_WITH_64_HEX_CHARS_IP_PEPPER',     // PLACEHOLDER
+
+    // Shared secret the generic purchase webhook (grant-access.php) requires.
+    // Your store sends it as the X-Grant-Secret header. Leave as REPLACE... to
+    // keep that webhook disabled until you set it.
+    'grant_secret' => 'REPLACE_WITH_A_LONG_RANDOM_GRANT_SECRET',  // PLACEHOLDER
+
+    // wyzcore store webhook. The signature token verifies incoming events; the
+    // access token is for calling wyzcore's API if we ever need to. Leave as
+    // REPLACE... to keep wyzcore-webhook.php in safe log-only mode.
+    'wyzcore_signature_token' => 'REPLACE_WITH_WYZCORE_SIGNATURE_TOKEN',  // PLACEHOLDER
+    'wyzcore_access_token'    => 'REPLACE_WITH_WYZCORE_ACCESS_TOKEN',     // PLACEHOLDER
 ];
