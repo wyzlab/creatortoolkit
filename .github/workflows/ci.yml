@@ -1,0 +1,82 @@
+name: CI
+
+# Runs on every pull request and every push to the build branch or main.
+# Two gates: syntax lint, and a full smoke test of the claim-to-gate journey
+# against a real MySQL. A red check here means the change is not safe to merge.
+
+on:
+  pull_request:
+  push:
+    branches: [main, 'claude/**']
+
+jobs:
+  lint:
+    name: Lint (PHP + JS)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+      - name: PHP syntax check
+        run: |
+          set -e
+          find deploy -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: JavaScript syntax check
+        run: |
+          set -e
+          for f in deploy/public_html/js/main.js deploy/public_html/js/auth.js; do node --check "$f"; done
+          for f in deploy/public_html/js/tool-engine.js deploy/public_html/js/fee-calc.js; do node --input-type=module --check < "$f"; done
+
+  smoke:
+    name: Smoke test (claim to Gate 1)
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: toolkit
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s --health-timeout=5s --health-retries=15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo, pdo_mysql, mysqli
+      - name: Write test config (local overrides, never committed)
+        run: |
+          cat > deploy/config/db.local.php <<'PHP'
+          <?php
+          return ['host'=>'127.0.0.1','port'=>3306,'name'=>'toolkit','user'=>'root','pass'=>'root','charset'=>'utf8mb4'];
+          PHP
+          php -r 'printf("<?php\nreturn [\n  \"code_pepper\" => %s,\n  \"csrf_salt\"   => %s,\n  \"ip_pepper\"   => %s,\n];\n", var_export(bin2hex(random_bytes(32)),true), var_export(bin2hex(random_bytes(32)),true), var_export(bin2hex(random_bytes(32)),true));' > deploy/config/secrets.local.php
+      - name: Wait for MySQL and load schema
+        run: |
+          for i in $(seq 1 30); do mysql -h 127.0.0.1 -P 3306 -uroot -proot -e "SELECT 1" && break; sleep 2; done
+          mysql -h 127.0.0.1 -P 3306 -uroot -proot toolkit < deploy/sql/schema.sql
+          mysql -h 127.0.0.1 -P 3306 -uroot -proot toolkit < deploy/sql/seed.sql
+      - name: Mint a test access code
+        id: code
+        run: |
+          php deploy/tools/gen-codes.php 1 ci > codes.txt
+          echo "value=$(sed -n '3p' codes.txt)" >> "$GITHUB_OUTPUT"
+      - name: Start the app
+        run: |
+          php -S 127.0.0.1:8899 -t deploy/public_html >/tmp/php.log 2>&1 &
+          for i in $(seq 1 15); do curl -sf -o /dev/null http://127.0.0.1:8899/index.php && break; sleep 1; done
+      - name: Run smoke test
+        env:
+          BASE: http://127.0.0.1:8899
+          CODE: ${{ steps.code.outputs.value }}
+        run: bash tests/smoke.sh

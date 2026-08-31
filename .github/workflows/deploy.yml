@@ -1,0 +1,41 @@
+name: Deploy to Hostinger
+
+# When code lands on main (a merged pull request), this connects to the
+# Hostinger server over SSH and updates the live site to match main.
+# Your credentials (db.local.php, secrets.local.php) are gitignored, so they
+# are never touched by the update.
+#
+# You can also run it by hand from the Actions tab (Run workflow).
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Never let two deploys run at once.
+concurrency:
+  group: deploy-hostinger
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Update the live site
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update the server over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.HOSTINGER_SSH_HOST }}
+          port: ${{ secrets.HOSTINGER_SSH_PORT }}
+          username: ${{ secrets.HOSTINGER_SSH_USER }}
+          key: ${{ secrets.HOSTINGER_SSH_KEY }}
+          script: |
+            set -e
+            REPO="$HOME/creatortoolkit"
+            if [ ! -d "$REPO/.git" ]; then
+              git clone git@github.com:wyzlab/creatortoolkit.git "$REPO"
+            fi
+            cd "$REPO"
+            git fetch --all --prune
+            git reset --hard origin/main
+            echo "Deployed commit: $(git rev-parse --short HEAD)"
