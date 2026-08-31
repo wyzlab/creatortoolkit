@@ -22,6 +22,24 @@ jobs:
     name: Update the live site
     runs-on: ubuntu-latest
     steps:
+      - name: Check the Hostinger secrets are set
+        env:
+          H: ${{ secrets.HOSTINGER_SSH_HOST }}
+          P: ${{ secrets.HOSTINGER_SSH_PORT }}
+          U: ${{ secrets.HOSTINGER_SSH_USER }}
+          PW: ${{ secrets.HOSTINGER_SSH_PASSWORD }}
+        run: |
+          ok=1
+          [ -z "$H" ]  && { echo "::error::Missing secret HOSTINGER_SSH_HOST";     ok=0; }
+          [ -z "$P" ]  && { echo "::error::Missing secret HOSTINGER_SSH_PORT";     ok=0; }
+          [ -z "$U" ]  && { echo "::error::Missing secret HOSTINGER_SSH_USER";     ok=0; }
+          [ -z "$PW" ] && { echo "::error::Missing secret HOSTINGER_SSH_PASSWORD"; ok=0; }
+          if [ "$ok" -eq 0 ]; then
+            echo "Add the missing ones under: repo Settings > Secrets and variables > Actions > New repository secret."
+            echo "Then re-run this deploy (Re-run jobs, top right)."
+            exit 1
+          fi
+          echo "All four Hostinger secrets are present."
       - name: Update the server over SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
