@@ -24,9 +24,16 @@ require_post();
 $raw = file_get_contents('php://input') ?: '';
 $headers = collect_headers();
 
-// Always log for format discovery. Truncate to keep the log sane.
+// Always log for format discovery: to the PHP error log, and (best effort) to
+// a file above the web root you can open in File Manager to read the exact
+// shape of a test delivery: private/webhook-log.txt
 error_log('WYZCORE_WEBHOOK headers=' . json_encode($headers)
         . ' body=' . substr($raw, 0, 2000));
+@file_put_contents(
+    __DIR__ . '/../../private/webhook-log.txt',
+    '=== ' . now_dt() . " ===\nHEADERS: " . json_encode($headers) . "\nBODY: " . $raw . "\n\n",
+    FILE_APPEND | LOCK_EX
+);
 
 $secrets = require CONFIG_DIR . '/secrets.php';
 $sigToken = (string)($secrets['wyzcore_signature_token'] ?? '');
