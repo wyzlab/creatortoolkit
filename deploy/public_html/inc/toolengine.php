@@ -243,4 +243,14 @@ function derive_profile(array &$profile, string $slug, array $answers): void
         }
         if ($mods) { profile_set($profile, 'sparker.modules', implode("\n", $mods)); }
     }
+    if ($slug === 'course-idea-validation') {
+        // The verdict is computed, not a form field, so store it for Gate 3 to use.
+        $v = compute_validation_verdict($answers);
+        profile_set($profile, 'validation.verdict', $v['verdict']);
+    }
+    if ($slug === 'course-design-checklist') {
+        $sc = compute_checklist_score($answers);
+        profile_set($profile, 'checklist.score', $sc['score']);
+        profile_set($profile, 'checklist.band', $sc['band']);
+    }
 }

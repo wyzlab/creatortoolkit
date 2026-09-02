@@ -103,6 +103,11 @@ function close_gate(PDO $pdo, int $userId, int $gate): ?array
     // Queue the gate-complete email (sent for real at Stage E).
     queue_gate_email($pdo, $userId, $gate, $summaryHtml, $claim);
 
+    // The last gate finishing means the whole toolkit is done: close the package.
+    if (!isset(GATES[$gate + 1])) {
+        close_package($pdo, $userId);
+    }
+
     return [
         'summary_html' => $summaryHtml,
         'ai_paragraph' => null,
@@ -111,6 +116,58 @@ function close_gate(PDO $pdo, int $userId, int $gate): ?array
         'next_gate_unlocked' => $nextUnlocked,
         'already' => false,
     ];
+}
+
+/**
+ * Close the full package (gate_number 0): claim the Community Designer code,
+ * store the package summary, and queue the package email. Idempotent.
+ * Call inside a transaction.
+ */
+function close_package(PDO $pdo, int $userId): ?array
+{
+    $gr = $pdo->prepare('SELECT summary_html FROM gate_results WHERE user_id = ? AND gate_number = 0 LIMIT 1');
+    $gr->execute([$userId]);
+    $existing = $gr->fetch();
+
+    $claim = wyzai_claim($pdo, $userId, 'package');
+
+    if ($existing) {
+        return ['summary_html' => $existing['summary_html'],
+                'wyzai_code' => $claim['code'] ?? null, 'coach_name' => $claim['coach_name'] ?? null];
+    }
+
+    $nowStr = now_dt();
+    $pf = $pdo->prepare('SELECT profile_json FROM user_profile WHERE user_id = ? LIMIT 1');
+    $pf->execute([$userId]);
+    $profile = json_decode((string)$pf->fetchColumn() ?: '{}', true) ?: [];
+    [$sumJson, $sumHtml] = build_gate_summary(0, $profile);
+
+    $pdo->prepare('INSERT INTO gate_results (user_id, gate_number, summary_json, summary_html, ai_paragraph, created_at)
+                   VALUES (?, 0, ?, ?, NULL, ?)
+                   ON DUPLICATE KEY UPDATE summary_html = VALUES(summary_html)')
+        ->execute([$userId, json_encode($sumJson), $sumHtml, $nowStr]);
+
+    $aiCfg = require CONFIG_DIR . '/ai.php';
+    if (empty($aiCfg['enabled'])) {
+        $pdo->prepare('INSERT IGNORE INTO ai_log (user_id, trigger_key, status, created_at) VALUES (?, "package", "skipped", ?)')
+            ->execute([$userId, $nowStr]);
+    }
+
+    // Queue the package-complete email.
+    $u = $pdo->prepare('SELECT email FROM users WHERE id = ? LIMIT 1');
+    $u->execute([$userId]);
+    $email = (string)$u->fetchColumn();
+    if ($email !== '') {
+        $coach = $claim['coach_name'] ?? '';
+        $code  = $claim['code'] ?? '';
+        $codeLine = ($code !== '' && strpos($code, 'PLACEHOLDER') === false) ? '<p>Your <strong>' . e($coach) . '</strong> code is <strong>' . e($code) . '</strong>.</p>' : '';
+        $subject = 'You finished the DIY Creator Starter Toolkit';
+        $html = $sumHtml . $codeLine . '<p><a href="' . e(APP['app_url']) . '/results/package.php">Open your full package</a></p>';
+        $text = strip_tags($sumHtml) . "\n\nOpen your full package: " . APP['app_url'] . "/results/package.php\n";
+        mail_queue('package_complete', $email, $subject, $html, $text, $userId);
+    }
+
+    return ['summary_html' => $sumHtml, 'wyzai_code' => $claim['code'] ?? null, 'coach_name' => $claim['coach_name'] ?? null];
 }
 
 /** Is a gate unlocked for a user? (small helper, no include of guard needed) */
