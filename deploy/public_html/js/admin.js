@@ -110,7 +110,7 @@
         var r = await T.apiPost('/api/admin/gen-universal.php', {});
         T.el('[data-universal-code]', root).value = r.code;
         T.el('[data-universal-result]', root).hidden = false;
-        T.setNotice(notice, 'Done. Paste this code into your EzyCourse automation email.', 'success');
+        T.setNotice(notice, 'Done. Paste this code into your WyzCore automation email.', 'success');
         loadCodes();
       } catch (e) {
         T.setNotice(notice, e.message, 'error');

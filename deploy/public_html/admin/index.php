@@ -41,14 +41,14 @@ require __DIR__ . '/../inc/head.php';
     </div>
   </section>
 
-  <!-- Universal code for EzyCourse -->
+  <!-- Universal code for WyzCore -->
   <section class="card admin-section">
-    <h2>Universal code (for EzyCourse emails)</h2>
-    <p class="muted">One shared code any buyer can use. Put it in your EzyCourse automation email so every buyer gets it, even before EmailIt is live. Rotate it anytime to swap in a fresh one (the old one stops working).</p>
+    <h2>Universal code (for WyzCore emails)</h2>
+    <p class="muted">One shared code any buyer can use. Put it in your WyzCore automation email so every buyer gets it, even before EmailIt is live. Rotate it anytime to swap in a fresh one (the old one stops working).</p>
     <p class="notice <?= $hasUniversal ? 'notice--success' : '' ?>">
       <?= $hasUniversal
         ? 'A universal code is active. Create a new one below only if you want to rotate it (the current one will stop working).'
-        : 'No universal code yet. Create one below, then paste it into your EzyCourse email.' ?>
+        : 'No universal code yet. Create one below, then paste it into your WyzCore email.' ?>
     </p>
     <button class="btn btn--cta" type="button" data-action="gen-universal">
       <?= $hasUniversal ? 'Rotate universal code' : 'Create universal code' ?>
@@ -56,7 +56,7 @@ require __DIR__ . '/../inc/head.php';
     <div class="notice" data-universal-notice hidden></div>
     <div data-universal-result hidden>
       <div class="admin-result-head">
-        <strong>Your universal code (paste this into EzyCourse):</strong>
+        <strong>Your universal code (paste this into WyzCore):</strong>
         <button class="btn btn--sm btn--ghost" type="button" data-copy="universal">Copy</button>
       </div>
       <input class="input" data-universal-code readonly>

@@ -2,7 +2,7 @@
 /**
  * POST /api/admin/gen-universal.php  ->  {ok, code}
  * Admin only. Creates a single UNIVERSAL access code (batch "__universal__")
- * that any buyer can use, so a static EzyCourse email can carry one code for
+ * that any buyer can use, so a static WyzCore email can carry one code for
  * everyone. Rotating revokes the previous universal code and issues a new one,
  * so a leaked code can be swapped instantly.
  */
