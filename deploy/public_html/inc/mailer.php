@@ -22,7 +22,25 @@ function mail_queue(
     string $text,
     ?int $userId = null
 ): int {
+    require_once __DIR__ . '/email-layout.php';
     $pdo = db();
+
+    // Respect unsubscribe, except for access-critical mail people still need.
+    $alwaysSend = ['welcome', 'purchase_access', 'access_code', 'password_reset', 'test'];
+    if (!in_array($type, $alwaysSend, true) && mail_is_opted_out($toAddress)) {
+        $ins = $pdo->prepare(
+            'INSERT INTO email_log (user_id, email_type, to_address, subject, status, attempts, created_at, error)
+             VALUES (?, ?, ?, ?, "failed", 0, ?, "recipient unsubscribed")'
+        );
+        $ins->execute([$userId, $type, $toAddress, $subject, now_dt()]);
+        return (int)$pdo->lastInsertId();
+    }
+
+    // Wrap the content in the branded shell with a per-recipient unsubscribe link.
+    $unsub = unsubscribe_url($toAddress);
+    $html = email_html_wrap($html, $unsub);
+    $text = email_text_wrap($text, $unsub);
+
     $ins = $pdo->prepare(
         'INSERT INTO email_log (user_id, email_type, to_address, subject, status, attempts, created_at)
          VALUES (?, ?, ?, ?, ?, 0, ?)'
@@ -57,6 +75,8 @@ function mail_queue(
         $mail->setFrom($cfg['from_email'], $cfg['from_name']);
         $mail->addReplyTo($cfg['reply_to']);
         $mail->addAddress($toAddress);
+        $mail->addCustomHeader('List-Unsubscribe', '<' . unsubscribe_url($toAddress) . '>');
+        $mail->addCustomHeader('List-Unsubscribe-Post', 'List-Unsubscribe=One-Click');
         $mail->Subject = $subject;
         $mail->isHTML(true);
         $mail->Body    = $html;
@@ -67,6 +87,18 @@ function mail_queue(
         mail_mark($id, 'failed', $e->getMessage());
     }
     return $id;
+}
+
+/** Has this address unsubscribed? */
+function mail_is_opted_out(string $email): bool
+{
+    try {
+        $q = db()->prepare('SELECT 1 FROM email_optouts WHERE email = ? LIMIT 1');
+        $q->execute([strtolower(trim($email))]);
+        return (bool)$q->fetchColumn();
+    } catch (\Throwable $e) {
+        return false;   // table missing (pre-migration): do not block sending
+    }
 }
 
 /** Update an email_log row's status. */
