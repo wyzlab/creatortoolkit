@@ -104,8 +104,7 @@
   if (uniBtn) {
     uniBtn.addEventListener('click', async function () {
       var notice = T.el('[data-universal-notice]', root);
-      T.setNotice(notice, '');
-      if (!window.confirm('Create a new universal code? Any current one will stop working.')) return;
+      T.setNotice(notice, 'Creating your universal code...', null);
       uniBtn.disabled = true;
       try {
         var r = await T.apiPost('/api/admin/gen-universal.php', {});
