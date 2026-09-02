@@ -155,6 +155,67 @@ function build_tool_result(string $slug, array $answers, array $profile): array
             $json += ['skill' => $answers['skill'] ?? '', 'product' => $answers['product_type'] ?? ''];
             break;
 
+        case 'price-card':
+            require_once __DIR__ . '/fees.php';
+            $price = (string)($answers['final_price'] ?? $answers['headline'] ?? '');
+            $body .= '<h2>Your price</h2>';
+            $body .= '<div class="result-highlight"><p style="font-size:24px;font-weight:800;color:#003D7A;">PHP ' . e($price) . '</p>';
+            if (!empty($answers['priced_on'])) $body .= '<p>Priced on the outcome my client gets: ' . e((string)$answers['priced_on']) . '</p>';
+            $body .= '</div>';
+            $calc = $answers['fee_calc'] ?? null;
+            $headline = is_array($calc) ? (float)($calc['headline'] ?? 0) : (float)($answers['headline'] ?? 0);
+            if ($headline > 0) {
+                $fees = load_fees(db());
+                $body .= '<h3>What lands in your account</h3><div class="scroll-x"><table class="admin-table"><thead><tr><th>Method</th><th>Fee</th><th>Take-home</th></tr></thead><tbody>';
+                foreach (fee_all_methods($headline, $fees) as $row) {
+                    $body .= '<tr><td>' . e($row['label']) . '</td><td>PHP ' . number_format($row['fee'], 2)
+                           . '</td><td>PHP ' . number_format($row['take_home'], 2) . '</td></tr>';
+                }
+                $body .= '</tbody></table></div>';
+            }
+            $json += ['price' => $price];
+            break;
+
+        case 'launch-plan':
+            $verdict = (string)(profile_get($profile, 'validation.verdict') ?? 'PENDING');
+            $expect = [
+                'GO'      => 'Your Gate 1 validation said GO. You have real demand, so launch with confidence and keep showing up all week.',
+                'REFINE'  => 'Your Gate 1 validation said REFINE. Keep this first launch small and warm while you sharpen the offer.',
+                'RESET'   => 'Your Gate 1 validation said RESET. Treat this as a soft test, and be ready to adjust the angle or audience.',
+                'PENDING' => 'You have not finished your validation test yet. Run it alongside this launch, and treat a quiet day one as normal.',
+            ];
+            $body .= '<h2>Your first launch plan</h2>';
+            $body .= '<div class="notice notice--stale"><span>' . e($expect[$verdict] ?? $expect['PENDING']) . '</span></div>';
+            $body .= rline('This launch is for', (string)($answers['one_person'] ?? ''));
+            $body .= rline('My target first sales', (string)($answers['target_sales'] ?? ''));
+            $countPhase = function ($set) { $n = 0; if (is_array($set)) foreach ($set as $v) if ($v) $n++; return $n; };
+            $body .= '<div class="result-highlight"><p><strong>Before:</strong> ' . $countPhase($answers['before'] ?? []) . ' of 7 done</p>'
+                   . '<p><strong>Launch week:</strong> ' . $countPhase($answers['during'] ?? []) . ' of 5 done</p>'
+                   . '<p><strong>After:</strong> ' . $countPhase($answers['after'] ?? []) . ' of 5 done</p></div>';
+            $body .= '<p class="muted">A quiet day one is not a failed launch. Warmth beats size. Keep going.</p>';
+            $json += ['verdict' => $verdict];
+            break;
+
+        case 'call-script':
+            // Built to be read one-handed at 375px during a live call.
+            $stage = function ($n, $title, $say) {
+                if (trim((string)$say) === '') return '';
+                return '<div class="result-highlight"><h3>' . e($n . '. ' . $title) . '</h3><p>' . nl2br(e((string)$say)) . '</p></div>';
+            };
+            $body .= '<h2>Your call script</h2>';
+            $body .= '<p class="muted">Keep this open during the call. Six stages, about 20 to 30 minutes. Diagnose before you prescribe.</p>';
+            $body .= $stage('0', 'Before the call (intake)', $answers['intake_questions'] ?? '');
+            $body .= $stage('1', 'Connect', $answers['opener'] ?? '');
+            $body .= $stage('2', 'Frame', $answers['framing'] ?? '');
+            $diag = trim((string)($answers['diagnosis_q1'] ?? '') . "\n" . (string)($answers['diagnosis_q2'] ?? ''));
+            $body .= $stage('3', 'Diagnose (listen 70%)', $diag);
+            $body .= $stage('4', 'Prescribe (only if it fits)', $answers['prescribe'] ?? '');
+            $inv = trim((string)($answers['price_sentence'] ?? '') . (empty($answers['feared_objection']) ? '' : "\n\nIf they hesitate: " . $answers['feared_objection']));
+            $body .= $stage('5', 'Invite (say the price, then breathe)', $inv);
+            $body .= $stage('6', 'Follow-up', $answers['followup'] ?? '');
+            $json += ['ready' => true];
+            break;
+
         default:
             $body .= '<h2>' . e($title) . '</h2><p>Your answers are saved.</p>';
     }
@@ -201,6 +262,30 @@ function build_gate_summary(int $gateNumber, array $profile): array
         if ($theme !== '') $body .= '<p><strong>Course theme:</strong> ' . e($theme) . '</p>';
         $body .= '</div>';
         $json += ['offer_who' => $offerWho, 'theme' => $theme];
+    } elseif ($gateNumber === 3) {
+        $price = (string)(profile_get($profile, 'pricing.final_price') ?? profile_get($profile, 'pricing.headline') ?? '');
+        $body .= '<h2>Gate 3 complete: you can price, launch, and sell</h2>';
+        $body .= '<p>You set a price you can defend, mapped your first launch, and have a call script ready. You have finished the toolkit.</p>';
+        $body .= '<div class="result-highlight">';
+        if ($price !== '') $body .= '<p><strong>Your price:</strong> PHP ' . e($price) . '</p>';
+        $body .= '<p>Your discovery call script is ready to use on your next call.</p>';
+        $body .= '</div>';
+        $json += ['price' => $price];
+    } elseif ($gateNumber === 0) {
+        // The full package: everything the learner built, in one place.
+        $body .= '<h2>Your complete creator toolkit</h2>';
+        $body .= '<p>You went from "I help everyone" to a clear client, a course, a price, and a plan to sell it. Here is your whole journey.</p>';
+        $lname = (string)(profile_get($profile, 'clarity.learner_name') ?? profile_get($profile, 'avatar.name') ?? '');
+        $niche = (string)(profile_get($profile, 'clarity.niche') ?? '');
+        $theme = (string)(profile_get($profile, 'sparker.theme') ?? '');
+        $price = (string)(profile_get($profile, 'pricing.final_price') ?? profile_get($profile, 'pricing.headline') ?? '');
+        $body .= '<div class="result-highlight">';
+        if ($lname !== '') $body .= '<p><strong>Ideal client:</strong> ' . e($lname) . '</p>';
+        if ($niche !== '') $body .= '<p><strong>Niche:</strong> ' . e($niche) . '</p>';
+        if ($theme !== '') $body .= '<p><strong>Course theme:</strong> ' . e($theme) . '</p>';
+        if ($price !== '') $body .= '<p><strong>Price:</strong> PHP ' . e($price) . '</p>';
+        $body .= '</div>';
+        $json += ['learner' => $lname, 'price' => $price];
     } else {
         $body .= '<h2>Gate ' . (int)$gateNumber . ' complete</h2>';
     }

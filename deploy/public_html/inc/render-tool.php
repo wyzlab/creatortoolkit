@@ -29,6 +29,20 @@ $clientConfig = [
     'steps'       => $def['steps'],
 ];
 
+// Does this tool use the fee calculator? If so, deliver the fee table and the
+// calculator script (the client reads the same rows the server uses).
+$needsFees = false;
+foreach ($def['steps'] as $step) {
+    foreach ($step['fields'] as $f) {
+        if (($f['type'] ?? '') === 'fee-calculator') { $needsFees = true; break 2; }
+    }
+}
+$feeTable = [];
+if ($needsFees) {
+    require_once __DIR__ . '/fees.php';
+    $feeTable = array_values(load_fees(db()));
+}
+
 $pageTitle = $def['title'];
 $pageDesc  = $def['lede'] ?? '';
 require __DIR__ . '/head.php';
@@ -36,5 +50,9 @@ require __DIR__ . '/head.php';
 <div class="wrap" data-tool-root data-tool-slug="<?= e($slug) ?>"></div>
 
 <script type="application/json" id="tool-config"><?= json_encode($clientConfig, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
+<?php if ($needsFees): ?>
+<script type="application/json" id="fee-table"><?= json_encode($feeTable, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
+<script src="<?= e(asset('/js/fee-calc.js')) ?>"></script>
+<?php endif; ?>
 <script type="module" src="<?= e(asset('/js/tool-engine.js')) ?>"></script>
 <?php require __DIR__ . '/footer.php'; ?>

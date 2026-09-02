@@ -259,6 +259,15 @@ class ToolEngine {
       wrap.appendChild(h('span', { class: 'field__hint', text: 'Carried from your earlier answers. Edit if it should change.' }));
     }
 
+    // The Pricing tool's calculator is a self-contained widget.
+    if (field.type === 'fee-calculator') {
+      const holder = h('div', {});
+      wrap.appendChild(holder);
+      this.mountFeeCalc(holder, field);
+      if (field.hint) wrap.appendChild(h('span', { class: 'field__hint', text: field.hint }));
+      return wrap;
+    }
+
     const val = this.state.answers[field.key];
     let control;
 
@@ -329,6 +338,22 @@ class ToolEngine {
     if (field.hint) wrap.appendChild(h('span', { class: 'field__hint', text: field.hint }));
     wrap.appendChild(h('div', { class: 'field__error', hidden: true }));
     return wrap;
+  }
+
+  /** Mount the fee calculator widget (Pricing tool). Reads the embedded fee table. */
+  mountFeeCalc(holder, field) {
+    let fees = [];
+    const feesEl = document.getElementById('fee-table');
+    try { fees = feesEl ? JSON.parse(feesEl.textContent) : []; } catch (e) { fees = []; }
+    const initial = this.state.answers[field.key] || null;
+    if (window.FeeCalc && fees.length) {
+      window.FeeCalc.mount(holder, fees, initial, (v) => {
+        this.state.answers[field.key] = v;
+        this.scheduleSave();
+      });
+    } else {
+      holder.appendChild(h('p', { class: 'muted', text: 'The calculator could not load. You can still set your price on the next step.' }));
+    }
   }
 
   staleNote(field, pf) {

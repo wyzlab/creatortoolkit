@@ -625,6 +625,239 @@ function tool_defs(): array
         ],
     ],
 
+    // ══ GATE 3, TOOL 1 ═══════════════════════════════════════════════════
+    'pricing-confidence' => [
+        'gate' => 3,
+        'title' => 'Pricing Confidence Starter',
+        'lede' => 'Set one price you can defend, checked against real checkout fees.',
+        'scoring' => ['type' => 'none'],
+        'result' => 'price-card',
+        'wyzai_prompt' =>
+            "I am a Filipino coach, consultant, or creator selling [offer] to [audience]. The outcome my client gets is [outcome]. "
+            . "I am considering a headline price of PHP [amount], sold through [GCash / Maya / card / bank transfer]. Act as a pricing coach. "
+            . "1) Tell me if my one-line value reason is strong or weak and why. 2) Estimate my take-home after typical PH checkout fees. "
+            . "3) Suggest a fair low, mid, and high price for this offer, with a one-line reason for each. Keep it practical and Filipino-first.",
+        'writesToProfile' => [
+            'pricing.value_reason' => 'value_reason', 'pricing.band' => 'band',
+            'pricing.headline' => 'headline', 'pricing.method' => 'method', 'pricing.final_price' => 'final_price',
+        ],
+        'steps' => [
+            [
+                'title' => 'Why you might undercharge',
+                'help' => 'Tick the ones that sound like you. No judgment. The gap is almost never your skill, it is the basis you priced from.',
+                'fields' => [
+                    ['key' => 'undercharge', 'type' => 'checklist', 'label' => 'Tick what sounds like you',
+                     'items' => [
+                        ['key' => 'u_once', 'label' => 'I set my price once from what felt safe, and never moved it'],
+                        ['key' => 'u_hourly', 'label' => 'I quote by the hour, so my income is capped by my time'],
+                        ['key' => 'u_cheapest', 'label' => 'I compare myself to the cheapest option, not my results'],
+                        ['key' => 'u_embarrassed', 'label' => 'I feel embarrassed the second I have to say the number'],
+                        ['key' => 'u_nofees', 'label' => 'I set a price without thinking about checkout fees'],
+                     ]],
+                ],
+            ],
+            [
+                'title' => 'Frame your value',
+                'help' => 'Price the result your client walks away with, not the hours.',
+                'fields' => [
+                    ['key' => 'outcome', 'type' => 'textarea', 'label' => 'What does your client walk away with?', 'hint' => 'The outcome, not the hours.', 'prefillFrom' => ['clarity.want', 'avatar.desired_outcome']],
+                    ['key' => 'worth', 'type' => 'textarea', 'label' => 'What is that outcome worth to them?', 'hint' => 'Time saved, income gained, stress removed.'],
+                    ['key' => 'value_reason', 'type' => 'text', 'required' => true, 'label' => 'Say it in one line: "My client gets ___"'],
+                ],
+            ],
+            [
+                'title' => 'Pick your band',
+                'help' => 'Do not hunt for one correct price. Place yourself on a spectrum.',
+                'fields' => [
+                    ['key' => 'band', 'type' => 'radio', 'required' => true, 'label' => 'My band',
+                     'options' => ['Low-ticket digital (roughly PHP 195 to 1,500)', 'Coaching or service (tiered by access)', 'Consulting or training (per engagement or per head)']],
+                    ['key' => 'placement', 'type' => 'radio', 'label' => 'Within that band I place myself',
+                     'options' => ['Low', 'Mid', 'High']],
+                    ['key' => 'band_reason', 'type' => 'text', 'label' => 'My reason (outcome plus proof)'],
+                ],
+            ],
+            [
+                'title' => 'Fee-check your price',
+                'help' => 'Your headline price is not your take-home. Try amounts and methods, or work backward from what you want to clear.',
+                'fields' => [
+                    ['key' => 'fee_calc', 'type' => 'fee-calculator', 'label' => 'Checkout fee calculator'],
+                ],
+                'stuck' => 'Worked example: PHP 500 via GCash. Fee is 3% of 500 (15) plus 11, which is 26. Take-home is about 474 before tax.',
+            ],
+            [
+                'title' => 'Set your checkout price',
+                'help' => 'If you need to clear a certain amount after fees, set your headline a little above it.',
+                'fields' => [
+                    ['key' => 'headline', 'type' => 'text', 'required' => true, 'label' => 'My headline price (PHP)', 'placeholder' => 'e.g. 500'],
+                    ['key' => 'method', 'type' => 'radio', 'required' => true, 'label' => 'My main payment method',
+                     'options' => ['GCash', 'Maya', 'GrabPay', 'ShopeePay', 'QR Ph', 'Bank transfer', 'Domestic card']],
+                ],
+            ],
+            [
+                'title' => 'Say it out loud',
+                'help' => 'Read it out loud once. That is the number you can defend.',
+                'fields' => [
+                    ['key' => 'final_price', 'type' => 'text', 'required' => true, 'label' => 'My price is (PHP)', 'prefillFrom' => 'pricing.headline'],
+                    ['key' => 'priced_on', 'type' => 'textarea', 'label' => 'This is priced on the outcome my client gets, which is', 'prefillFrom' => 'pricing.value_reason'],
+                    ['key' => 'confidence', 'type' => 'checklist', 'label' => 'Confidence checklist',
+                     'items' => [
+                        ['key' => 'c_outcome', 'label' => 'I named the outcome my client gets'],
+                        ['key' => 'c_band', 'label' => 'I picked my band and placed myself in it'],
+                        ['key' => 'c_fee', 'label' => 'I set a fee-aware price'],
+                        ['key' => 'c_reason', 'label' => 'I wrote my one-line reason'],
+                        ['key' => 'c_outloud', 'label' => 'I said my price out loud'],
+                     ]],
+                ],
+            ],
+        ],
+    ],
+
+    // ══ GATE 3, TOOL 2 ═══════════════════════════════════════════════════
+    'first-launch-checklist' => [
+        'gate' => 3,
+        'title' => 'First Launch Mini-Checklist',
+        'lede' => 'Your first launch, minus the guesswork. Three phases, nothing you do not need.',
+        'scoring' => ['type' => 'none'],
+        'result' => 'launch-plan',
+        'wyzai_prompt' =>
+            "Act as my launch coach. I am a first-time creator running my first paid launch. My offer is: [what you sell]. It helps "
+            . "[who it is for] to [the outcome]. My audience right now is: [where they are and roughly how many]. Give me a simple, "
+            . "right-sized launch plan in three phases: before launch, launch week, and after launch. For each phase, give me 3 to 5 "
+            . "short action steps and one message I could send. Keep it lightweight for a first launch.",
+        'writesToProfile' => [
+            'launch.one_person' => 'one_person', 'launch.target_sales' => 'target_sales',
+        ],
+        'steps' => [
+            [
+                'title' => 'Who and what',
+                'help' => 'Your Gate 1 and Gate 2 work carries over. Edit to fit this launch.',
+                'fields' => [
+                    ['key' => 'one_person', 'type' => 'textarea', 'required' => true, 'label' => 'One person and one problem this launch is for', 'prefillFrom' => ['clarity.learner_role', 'avatar.role']],
+                    ['key' => 'the_offer', 'type' => 'text', 'label' => 'What I am launching', 'prefillFrom' => 'offer.name'],
+                ],
+            ],
+            [
+                'title' => 'Phase 1: Before you launch',
+                'help' => 'The part that prevents crickets. Warmth beats size.',
+                'fields' => [
+                    ['key' => 'before', 'type' => 'checklist', 'label' => 'Tick as you finish',
+                     'items' => [
+                        ['key' => 'b_person', 'label' => 'Named my one person and one problem'],
+                        ['key' => 'b_validate', 'label' => 'Validated before building (talked to real buyers)'],
+                        ['key' => 'b_presell', 'label' => 'Pre-sold to prove demand (a few early yeses)'],
+                        ['key' => 'b_warm', 'label' => 'Warmed my audience with value and proof'],
+                        ['key' => 'b_math', 'label' => 'Set realistic launch math (audience, conversion, target)'],
+                        ['key' => 'b_essentials', 'label' => 'Prepared the essentials only (page, PH payment, description)'],
+                        ['key' => 'b_emotions', 'label' => 'Prepared emotionally for a slow start'],
+                     ]],
+                ],
+            ],
+            [
+                'title' => 'Your launch math',
+                'help' => 'A small first launch counts as a win.',
+                'fields' => [
+                    ['key' => 'audience_size', 'type' => 'text', 'label' => 'My warm audience size (roughly)'],
+                    ['key' => 'conversion_rate', 'type' => 'text', 'label' => 'A modest conversion rate', 'placeholder' => 'e.g. 2 to 5 percent'],
+                    ['key' => 'target_sales', 'type' => 'text', 'label' => 'My target number of first sales'],
+                ],
+            ],
+            [
+                'title' => 'Phase 2: Launch day and week',
+                'help' => 'One announcement is not a launch. A short, steady sequence is.',
+                'fields' => [
+                    ['key' => 'during', 'type' => 'checklist', 'label' => 'Tick as you finish',
+                     'items' => [
+                        ['key' => 'd_open', 'label' => 'Open with a clear announcement (offer, outcome, price, deadline)'],
+                        ['key' => 'd_value', 'label' => 'Follow with value and proof, not just repetition'],
+                        ['key' => 'd_objections', 'label' => 'Answer objections openly'],
+                        ['key' => 'd_sequence', 'label' => 'Use a short sequence, not one message'],
+                        ['key' => 'd_urgency', 'label' => 'Add honest urgency near close (tied to the real deadline)'],
+                     ]],
+                ],
+            ],
+            [
+                'title' => 'Phase 3: After you launch',
+                'help' => 'Do not go silent. The audience you warmed is your biggest asset for next time.',
+                'fields' => [
+                    ['key' => 'after', 'type' => 'checklist', 'label' => 'Tick as you finish',
+                     'items' => [
+                        ['key' => 'a_onboard', 'label' => 'Thanked and onboarded my buyers'],
+                        ['key' => 'a_almost', 'label' => 'Followed up the "almost" buyers'],
+                        ['key' => 'a_feedback', 'label' => 'Asked for feedback'],
+                        ['key' => 'a_nurture', 'label' => 'Kept nurturing my audience'],
+                        ['key' => 'a_debrief', 'label' => 'Debriefed and celebrated my first yes'],
+                     ]],
+                ],
+            ],
+        ],
+    ],
+
+    // ══ GATE 3, TOOL 3 ═══════════════════════════════════════════════════
+    'discovery-call-script' => [
+        'gate' => 3,
+        'title' => 'Discovery Call Script',
+        'lede' => 'Turn conversations into clients without feeling salesy. A six-stage call flow.',
+        'scoring' => ['type' => 'none'],
+        'result' => 'call-script',
+        'wyzai_prompt' =>
+            "Act as an ethical, consultative sales coach for a [your niche] coach or consultant in the Philippines. Using a "
+            . "diagnose-before-you-prescribe approach, help me rewrite these discovery call questions in my own voice for a client "
+            . "whose main goal is [their goal]. Keep it warm and non-pushy, and give me one honest way to say the price out loud. "
+            . "Here are my current notes: [paste your notes].",
+        'writesToProfile' => [
+            'script.prescription' => 'prescribe', 'script.price_sentence' => 'price_sentence',
+        ],
+        'steps' => [
+            [
+                'title' => 'What you sell',
+                'help' => 'This is a diagnosis, not a pitch. Six stages, about 20 to 30 minutes.',
+                'fields' => [
+                    ['key' => 'what_i_sell', 'type' => 'radio', 'required' => true, 'label' => 'What I sell',
+                     'options' => ['Coaching', 'Consulting', 'Done-for-you', 'Other']],
+                ],
+            ],
+            [
+                'title' => 'Stage 0: Before the call',
+                'help' => 'Send an intake so you walk in informed and screen out people who are not ready.',
+                'fields' => [
+                    ['key' => 'intake_questions', 'type' => 'textarea', 'required' => true, 'label' => 'My three intake questions', 'rows' => 4,
+                     'placeholder' => "What is your main challenge right now?\nWhat do you want to achieve in the next 12 months?\nHow ready are you to invest in solving this?"],
+                ],
+            ],
+            [
+                'title' => 'Stages 1 and 2: Connect and Frame',
+                'fields' => [
+                    ['key' => 'opener', 'type' => 'textarea', 'label' => 'My go-to opener', 'placeholder' => '"I saw [detail from their form or profile]. Tell me a bit about that."'],
+                    ['key' => 'framing', 'type' => 'textarea', 'label' => 'My framing line, in my own words', 'placeholder' => '"First I will understand your situation, then what you want, then if it fits I will share how I can help. If it is not a fit, I will tell you honestly."'],
+                ],
+            ],
+            [
+                'title' => 'Stage 3: Diagnose',
+                'help' => 'The heart of the call. Listen 70 percent. Move from current struggle, to desired vision, to the cost of staying stuck.',
+                'fields' => [
+                    ['key' => 'diagnosis_q1', 'type' => 'text', 'label' => 'My best diagnosis question 1'],
+                    ['key' => 'diagnosis_q2', 'type' => 'text', 'label' => 'My best diagnosis question 2'],
+                ],
+            ],
+            [
+                'title' => 'Stages 4 and 5: Prescribe and Invite',
+                'help' => 'Prescribe only on a genuine fit. Say the price plainly, then breathe.',
+                'fields' => [
+                    ['key' => 'prescribe', 'type' => 'textarea', 'required' => true, 'label' => 'My one-line prescription', 'placeholder' => 'The fastest path to [their goal] is [your program].'],
+                    ['key' => 'price_sentence', 'type' => 'text', 'required' => true, 'label' => 'My exact price sentence', 'placeholder' => '"The investment is PHP ___. How does that feel to you?"', 'prefillFrom' => 'pricing.final_price'],
+                    ['key' => 'feared_objection', 'type' => 'text', 'label' => 'The objection I fear most, and my planned response'],
+                ],
+            ],
+            [
+                'title' => 'Stage 6: Follow-up',
+                'help' => 'Most buyers convert on the fourth or fifth touch. The sale is often in the follow-up.',
+                'fields' => [
+                    ['key' => 'followup', 'type' => 'textarea', 'label' => 'My follow-up cadence', 'placeholder' => 'Recap same day, then check in on [day].'],
+                ],
+            ],
+        ],
+    ],
+
     ];
 }
 
