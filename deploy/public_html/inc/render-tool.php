@@ -36,5 +36,5 @@ require __DIR__ . '/head.php';
 <div class="wrap" data-tool-root data-tool-slug="<?= e($slug) ?>"></div>
 
 <script type="application/json" id="tool-config"><?= json_encode($clientConfig, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
-<script type="module" src="/js/tool-engine.js"></script>
+<script type="module" src="<?= e(asset('/js/tool-engine.js')) ?>"></script>
 <?php require __DIR__ . '/footer.php'; ?>

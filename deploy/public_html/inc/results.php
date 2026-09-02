@@ -85,6 +85,76 @@ function build_tool_result(string $slug, array $answers, array $profile): array
             $json += ['verdict' => $verdict, 'yes_count' => $yes];
             break;
 
+        case 'six-part-offer':
+            $who = (string)($answers['offer_who'] ?? '');
+            $prob = (string)($answers['offer_problem'] ?? '');
+            $res = (string)($answers['offer_result'] ?? '');
+            $how = (string)($answers['offer_how'] ?? '');
+            $price = (string)($answers['offer_price'] ?? '');
+            $proof = (string)($answers['offer_proof'] ?? '');
+            $body .= '<h2>' . e((string)($answers['offer_name'] ?? 'Your one-page offer')) . '</h2>';
+            $body .= '<div class="result-highlight"><p>I help <strong>' . e($who) . '</strong> go from '
+                   . e($prob) . ' to ' . e($res) . ' through ' . e($how) . ', for <strong>' . e($price) . '</strong>.</p>';
+            $body .= '<p>Here is my proof: ' . e($proof) . '</p></div>';
+            $checks = $answers['clarity_check'] ?? [];
+            $ticked = is_array($checks) ? count(array_filter($checks)) : 0;
+            $body .= '<div class="verdict verdict--' . ($ticked >= 5 ? 'go' : 'refine') . '"><span class="verdict__badge">'
+                   . $ticked . ' of 5</span><p>' . ($ticked >= 5
+                        ? 'You have an offer you can sell by tonight.'
+                        : 'Almost. Sharpen the clarity-check items you could not tick yet.') . '</p></div>';
+            $json += ['name' => $answers['offer_name'] ?? '', 'clarity' => $ticked];
+            break;
+
+        case 'spark-summary':
+            $body .= '<h2>Your course spark</h2>';
+            $body .= rline('Winning theme', (string)($answers['winning_theme'] ?? ''));
+            $body .= rline('After this course, my student can', (string)($answers['transformation'] ?? ''));
+            $mods = [];
+            foreach (['module_1', 'module_2', 'module_3', 'module_4', 'module_5'] as $k) {
+                if (trim((string)($answers[$k] ?? '')) !== '') { $mods[] = (string)$answers[$k]; }
+            }
+            if ($mods) {
+                $body .= '<div class="result-highlight"><h3>Your modules</h3><ol>';
+                foreach ($mods as $m) { $body .= '<li>' . e($m) . '</li>'; }
+                $body .= '</ol></div>';
+            }
+            $body .= rline('My verdict', (string)($answers['verdict'] ?? ''));
+            $json += ['theme' => $answers['winning_theme'] ?? '', 'modules' => count($mods)];
+            break;
+
+        case 'checklist-scorecard':
+            $sc = compute_checklist_score($answers);
+            $band = $sc['band'];
+            $copy = [
+                'ready'    => 'Handa ka nang mag-launch. You are ready to launch.',
+                'almost'   => 'Malapit na. Close. Fix the gaps and you are there.',
+                'building' => 'Solid na simula. A solid start, with more to build.',
+                'clarity'  => 'Clarity muna. Clarity is the first unlock. Start there.',
+            ];
+            $body .= '<h2>Your score</h2>';
+            $body .= '<div class="verdict verdict--' . ($band === 'ready' ? 'go' : ($band === 'clarity' ? 'reset' : ($band === 'almost' ? 'refine' : 'pending')))
+                   . '"><span class="verdict__badge">' . $sc['score'] . ' / 20</span><p>' . e($copy[$band]) . '</p></div>';
+            $body .= '<p class="muted">This is not a grade. It is a map of what to do next. No shaming for a low score.</p>';
+            $body .= rline('Top 3 gaps I will fix first', (string)($answers['top_3_gaps'] ?? ''));
+            $json += ['score' => $sc['score'], 'band' => $band];
+            break;
+
+        case 'starter-decisions':
+            $body .= '<h2>Your three decisions</h2>';
+            $body .= rline('My skill', (string)($answers['skill'] ?? ''));
+            $body .= rline('My first product', (string)($answers['product_type'] ?? ''));
+            $pays = $answers['payment_method'] ?? [];
+            $payMap = ['pay_ewallet' => 'E-wallets', 'pay_bank' => 'Bank transfer', 'pay_qrph' => 'QR Ph', 'pay_cards' => 'Cards and PayPal'];
+            $chosen = [];
+            if (is_array($pays)) { foreach ($pays as $k => $on) { if ($on && isset($payMap[$k])) { $chosen[] = $payMap[$k]; } } }
+            $body .= rline('How my buyers will pay me', implode(', ', $chosen));
+            $body .= '<div class="result-highlight"><h3>Your 7-day plan</h3><ol>'
+                   . '<li>Pick one skill.</li><li>Pick one product type.</li><li>Set one payment method.</li>'
+                   . '<li>Validate with two past clients or followers.</li><li>Tell five people what you are making.</li>'
+                   . '<li>Make the first offer.</li><li>Review, tweak, then move to Course 1.</li></ol></div>';
+            $json += ['skill' => $answers['skill'] ?? '', 'product' => $answers['product_type'] ?? ''];
+            break;
+
         default:
             $body .= '<h2>' . e($title) . '</h2><p>Your answers are saved.</p>';
     }
@@ -117,6 +187,20 @@ function build_gate_summary(int $gateNumber, array $profile): array
         $body .= '<p><strong>Validation verdict:</strong> ' . e($verdict) . '</p>';
         $body .= '</div>';
         $json += ['niche' => $niche, 'learner' => $lname, 'verdict' => $verdict];
+    } elseif ($gateNumber === 2) {
+        $offerWho = (string)(profile_get($profile, 'offer.who') ?? '');
+        $offerResult = (string)(profile_get($profile, 'offer.result') ?? '');
+        $offerPrice = (string)(profile_get($profile, 'offer.price') ?? '');
+        $theme = (string)(profile_get($profile, 'sparker.theme') ?? '');
+
+        $body .= '<h2>Gate 2 complete: you built your offer</h2>';
+        $body .= '<p>You shaped an offer, sparked a course from your content, and audited it. Here it is in one place.</p>';
+        $body .= '<div class="result-highlight">';
+        if ($offerWho !== '') $body .= '<p><strong>Your offer:</strong> help ' . e($offerWho) . ' reach ' . e($offerResult)
+                                     . ($offerPrice !== '' ? ' for ' . e($offerPrice) : '') . '.</p>';
+        if ($theme !== '') $body .= '<p><strong>Course theme:</strong> ' . e($theme) . '</p>';
+        $body .= '</div>';
+        $json += ['offer_who' => $offerWho, 'theme' => $theme];
     } else {
         $body .= '<h2>Gate ' . (int)$gateNumber . ' complete</h2>';
     }

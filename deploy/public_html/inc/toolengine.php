@@ -198,3 +198,49 @@ function compute_validation_verdict(array $answers): array
     }
     return ['verdict' => $verdict, 'yes_count' => $yes];
 }
+
+/**
+ * 20-Point Checklist score. Points 1 to 19 score one each (checkboxes cp1..cp19
+ * across zones A to G). Point 20 scores one only when 20a, 20b, 20c and 20d all
+ * tick (the zoneH checklist). Maximum 20. Returns [score, band].
+ */
+function compute_checklist_score(array $answers): array
+{
+    $score = 0;
+    // Points 1 to 19 live in the zone A..G checklist fields.
+    foreach (['zoneA', 'zoneB', 'zoneC', 'zoneD', 'zoneE', 'zoneF', 'zoneG'] as $zone) {
+        $set = $answers[$zone] ?? [];
+        if (is_array($set)) {
+            foreach ($set as $on) { if ($on) $score++; }
+        }
+    }
+    // Point 20: all four of 20a-d must tick.
+    $h = $answers['zoneH'] ?? [];
+    $point20 = is_array($h)
+        && !empty($h['p20a']) && !empty($h['p20b']) && !empty($h['p20c']) && !empty($h['p20d']);
+    if ($point20) { $score++; }
+    $score = min($score, 20);
+
+    if ($score >= 16)      $band = 'ready';
+    elseif ($score >= 11)  $band = 'almost';
+    elseif ($score >= 6)   $band = 'building';
+    else                   $band = 'clarity';
+
+    return ['score' => $score, 'band' => $band];
+}
+
+/**
+ * Tool-specific derived profile values, run after apply_writes_to_profile.
+ * The Idea Sparker's separate module fields become one "sparker.modules" block
+ * so the 20-Point Checklist's Zone C can carry them forward.
+ */
+function derive_profile(array &$profile, string $slug, array $answers): void
+{
+    if ($slug === 'content-to-course-sparker') {
+        $mods = [];
+        foreach (['module_1', 'module_2', 'module_3', 'module_4', 'module_5'] as $k) {
+            if (!value_empty($answers[$k] ?? null)) { $mods[] = (string)$answers[$k]; }
+        }
+        if ($mods) { profile_set($profile, 'sparker.modules', implode("\n", $mods)); }
+    }
+}

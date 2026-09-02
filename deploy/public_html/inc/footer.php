@@ -34,10 +34,10 @@ $nonce = $GLOBALS['CSP_NONCE'] ?? '';
     data-agency="<?= e(APP['wyzai_agency_id']) ?>"
     defer></script>
 
-  <script src="/js/main.js" defer></script>
+  <script src="<?= e(asset('/js/main.js')) ?>" defer></script>
   <?php if (!empty($pageScripts) && is_array($pageScripts)): ?>
     <?php foreach ($pageScripts as $src): ?>
-      <script src="<?= e($src) ?>" defer></script>
+      <script src="<?= e(asset($src)) ?>" defer></script>
     <?php endforeach; ?>
   <?php endif; ?>
 </body>
