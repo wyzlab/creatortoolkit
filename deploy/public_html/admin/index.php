@@ -10,6 +10,11 @@ require_once __DIR__ . '/../inc/guard.php';
 
 require_admin();
 
+// Is there an active universal (shared) code?
+$hasUniversal = (int)db()->query(
+    "SELECT COUNT(*) FROM access_codes WHERE batch_label='__universal__' AND status='unclaimed'"
+)->fetchColumn() > 0;
+
 $pageTitle = 'Admin';
 $pageDesc  = 'Manage access codes and see how buyers are moving through the toolkit.';
 $pageScripts = ['/js/admin.js'];
@@ -33,6 +38,28 @@ require __DIR__ . '/../inc/head.php';
         <thead><tr><th>Tool</th><th>Gate</th><th>Started</th><th>Completed</th></tr></thead>
         <tbody></tbody>
       </table>
+    </div>
+  </section>
+
+  <!-- Universal code for EzyCourse -->
+  <section class="card admin-section">
+    <h2>Universal code (for EzyCourse emails)</h2>
+    <p class="muted">One shared code any buyer can use. Put it in your EzyCourse automation email so every buyer gets it, even before EmailIt is live. Rotate it anytime to swap in a fresh one (the old one stops working).</p>
+    <p class="notice <?= $hasUniversal ? 'notice--success' : '' ?>">
+      <?= $hasUniversal
+        ? 'A universal code is active. Create a new one below only if you want to rotate it (the current one will stop working).'
+        : 'No universal code yet. Create one below, then paste it into your EzyCourse email.' ?>
+    </p>
+    <button class="btn btn--cta" type="button" data-action="gen-universal">
+      <?= $hasUniversal ? 'Rotate universal code' : 'Create universal code' ?>
+    </button>
+    <div class="notice" data-universal-notice hidden></div>
+    <div data-universal-result hidden>
+      <div class="admin-result-head">
+        <strong>Your universal code (paste this into EzyCourse):</strong>
+        <button class="btn btn--sm btn--ghost" type="button" data-copy="universal">Copy</button>
+      </div>
+      <input class="input" data-universal-code readonly>
     </div>
   </section>
 

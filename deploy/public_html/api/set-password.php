@@ -40,10 +40,14 @@ try {
 
     // Lock the code row and confirm it is still claimable.
     $sel = $pdo->prepare(
-        'SELECT id, status, expires_at FROM access_codes WHERE code_lookup = ? FOR UPDATE'
+        'SELECT id, status, expires_at, batch_label FROM access_codes WHERE code_lookup = ? FOR UPDATE'
     );
     $sel->execute([$lookup]);
     $codeRow = $sel->fetch();
+
+    // A universal code (batch "__universal__") is shared: it stays unclaimed
+    // and many buyers can use it. Revoking it (status revoked) disables it.
+    $isUniversal = $codeRow && ($codeRow['batch_label'] === '__universal__');
 
     if (!$codeRow
         || $codeRow['status'] !== 'unclaimed'
@@ -70,16 +74,19 @@ try {
     $insUser->execute([$email, password_hash($password, PASSWORD_DEFAULT), $nowStr]);
     $userId = (int)$pdo->lastInsertId();
 
-    // 2. Claim the code (conditional, avoids a race).
-    $claim = $pdo->prepare(
-        'UPDATE access_codes
-            SET status = "claimed", claimed_by_user_id = ?, claimed_at = ?, issued_to_email = ?
-          WHERE id = ? AND status = "unclaimed"'
-    );
-    $claim->execute([$userId, $nowStr, $email, (int)$codeRow['id']]);
-    if ($claim->rowCount() !== 1) {
-        $pdo->rollBack();
-        fail('That code was just claimed. Please log in.', 409);
+    // 2. Claim the code. A single-use code flips to "claimed" (conditional, to
+    //    avoid a race). A universal code stays unclaimed so others can use it.
+    if (!$isUniversal) {
+        $claim = $pdo->prepare(
+            'UPDATE access_codes
+                SET status = "claimed", claimed_by_user_id = ?, claimed_at = ?, issued_to_email = ?
+              WHERE id = ? AND status = "unclaimed"'
+        );
+        $claim->execute([$userId, $nowStr, $email, (int)$codeRow['id']]);
+        if ($claim->rowCount() !== 1) {
+            $pdo->rollBack();
+            fail('That code was just claimed. Please log in.', 409);
+        }
     }
 
     // 3. Seed the carry-forward profile object.
