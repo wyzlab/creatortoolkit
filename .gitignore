@@ -16,3 +16,6 @@ composer.lock
 # Logs
 *.log
 node_modules/
+
+# Bundle PHPMailer so email works without a server-side install
+!deploy/vendor/

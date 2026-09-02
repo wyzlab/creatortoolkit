@@ -1,0 +1,14 @@
+<?php
+// Fill in your Hostinger mailbox password below, then save.
+// Create the mailbox first in hPanel, under Emails, Email Accounts.
+return [
+    'enabled'    => true,
+    'host'       => 'smtp.hostinger.com',
+    'port'       => 465,
+    'encryption' => 'ssl',
+    'username'   => 'hello@wyzcore.com',
+    'password'   => 'YOUR_MAILBOX_PASSWORD',
+    'from_email' => 'hello@wyzcore.com',
+    'from_name'  => 'WyzCore Academy',
+    'reply_to'   => 'hello@wyzcore.com',
+];

@@ -55,6 +55,7 @@ try {
 
     // Write this tool's answers into the profile, propagate staleness, clear own.
     apply_writes_to_profile($profile, $slug, $def, $answers);
+    derive_profile($profile, $slug, $answers);   // e.g. sparker modules -> one block
     clear_stale_for($profile, $slug, $answers);
     $newVersion = ($prow ? (int)$prow['version'] : 1) + 1;
 

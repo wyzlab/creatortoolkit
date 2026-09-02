@@ -99,13 +99,54 @@
     } finally { btn.disabled = false; }
   });
 
+  // ── Universal code ───────────────────────────────────────────────────
+  var uniBtn = T.el('[data-action="gen-universal"]', root);
+  if (uniBtn) {
+    uniBtn.addEventListener('click', async function () {
+      var notice = T.el('[data-universal-notice]', root);
+      T.setNotice(notice, 'Creating your universal code...', null);
+      uniBtn.disabled = true;
+      try {
+        var r = await T.apiPost('/api/admin/gen-universal.php', {});
+        T.el('[data-universal-code]', root).value = r.code;
+        T.el('[data-universal-result]', root).hidden = false;
+        T.setNotice(notice, 'Done. Paste this code into your EzyCourse automation email.', 'success');
+        loadCodes();
+      } catch (e) {
+        T.setNotice(notice, e.message, 'error');
+      } finally { uniBtn.disabled = false; }
+    });
+  }
+
+  // ── Email test ───────────────────────────────────────────────────────
+  var testForm = T.el('[data-form="testmail"]', root);
+  if (testForm) {
+    testForm.addEventListener('submit', async function (ev) {
+      ev.preventDefault();
+      var notice = T.el('[data-testmail-notice]', root);
+      var btn = testForm.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      T.setNotice(notice, 'Sending...', null);
+      try {
+        var r = await T.apiPost('/api/admin/send-test-email.php', { to: testForm.to.value.trim() });
+        var kind = r.status === 'sent' ? 'success' : (r.status === 'failed' ? 'error' : null);
+        T.setNotice(notice, r.message + (r.error ? ' (' + r.error + ')' : ''), kind);
+      } catch (e) {
+        T.setNotice(notice, e.message, 'error');
+      } finally { btn.disabled = false; }
+    });
+  }
+
   // ── Copy buttons ─────────────────────────────────────────────────────
   T.els('[data-copy]', root).forEach(function (b) {
+    var which = b.getAttribute('data-copy');
+    var label = b.textContent;
     b.addEventListener('click', async function () {
-      var ta = T.el('[data-gen-codes]', root);
-      try { await navigator.clipboard.writeText(ta.value); b.textContent = 'Copied'; }
-      catch (e) { ta.select(); }
-      setTimeout(function () { b.textContent = 'Copy all'; }, 1500);
+      var el = which === 'universal' ? T.el('[data-universal-code]', root) : T.el('[data-gen-codes]', root);
+      if (!el) return;
+      try { await navigator.clipboard.writeText(el.value); b.textContent = 'Copied'; }
+      catch (e) { el.select(); }
+      setTimeout(function () { b.textContent = label; }, 1500);
     });
   });
 

@@ -101,3 +101,14 @@ function redirect(string $path): void
     header('Location: ' . $path);
     exit;
 }
+
+/**
+ * A local asset URL with a cache-busting version from the file's mtime, so a
+ * changed CSS/JS file is always re-fetched (browsers cache these for a week).
+ */
+function asset(string $path): string
+{
+    $full = (defined('WEB_ROOT') ? WEB_ROOT : '') . $path;
+    $v = @filemtime($full);
+    return $v ? ($path . '?v=' . $v) : $path;
+}

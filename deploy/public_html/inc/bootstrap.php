@@ -20,12 +20,19 @@ $APP     = require CONFIG_DIR . '/app.php';
 $SECRETS = require CONFIG_DIR . '/secrets.php';
 
 define('APP', $APP);
+define('WEB_ROOT', realpath(__DIR__ . '/..'));   // public_html, for asset versioning
 define('IS_PROD', ($APP['environment'] ?? 'production') === 'production');
 
 // ── Error handling: verbose off in production, always logged ─────────────
 error_reporting(E_ALL);
 ini_set('display_errors', IS_PROD ? '0' : '1');
 ini_set('log_errors', '1');
+
+// ── Composer autoloader (PHPMailer for email), if bundled ────────────────
+$autoload = __DIR__ . '/../../vendor/autoload.php';
+if (is_file($autoload)) {
+    require $autoload;
+}
 
 // ── One shared PDO connection ────────────────────────────────────────────
 require __DIR__ . '/db.php';           // defines db(): PDO
