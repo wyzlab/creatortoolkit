@@ -119,6 +119,25 @@
     });
   }
 
+  // ── Email test ───────────────────────────────────────────────────────
+  var testForm = T.el('[data-form="testmail"]', root);
+  if (testForm) {
+    testForm.addEventListener('submit', async function (ev) {
+      ev.preventDefault();
+      var notice = T.el('[data-testmail-notice]', root);
+      var btn = testForm.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      T.setNotice(notice, 'Sending...', null);
+      try {
+        var r = await T.apiPost('/api/admin/send-test-email.php', { to: testForm.to.value.trim() });
+        var kind = r.status === 'sent' ? 'success' : (r.status === 'failed' ? 'error' : null);
+        T.setNotice(notice, r.message + (r.error ? ' (' + r.error + ')' : ''), kind);
+      } catch (e) {
+        T.setNotice(notice, e.message, 'error');
+      } finally { btn.disabled = false; }
+    });
+  }
+
   // ── Copy buttons ─────────────────────────────────────────────────────
   T.els('[data-copy]', root).forEach(function (b) {
     var which = b.getAttribute('data-copy');

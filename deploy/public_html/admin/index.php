@@ -112,6 +112,20 @@ require __DIR__ . '/../inc/head.php';
     </div>
   </section>
 
+  <!-- Email test -->
+  <section class="card admin-section">
+    <h2>Email test</h2>
+    <p class="muted">Once you have set up Hostinger email (mail.local.php), send yourself a test to confirm it works.</p>
+    <form data-form="testmail" class="admin-form">
+      <div class="field">
+        <label class="field__label" for="tm-to">Send test to (optional, defaults to your email)</label>
+        <input class="input" id="tm-to" name="to" type="email" placeholder="you@example.com">
+      </div>
+      <button class="btn btn--primary" type="submit">Send test email</button>
+    </form>
+    <div class="notice" data-testmail-notice hidden></div>
+  </section>
+
   <!-- Recent codes -->
   <section class="card admin-section">
     <h2>Recent codes</h2>
