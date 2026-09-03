@@ -1,0 +1,18 @@
+<?php
+// Turn on the AI coach note (Stage E).
+// 1. Copy this file to ai.local.php  (that name stays out of git).
+// 2. Paste your Anthropic API key.
+// 3. Set the model id to the one you want to use (ask for the current id;
+//    a small, fast model is plenty for a short paragraph and costs the least).
+// 4. Save. The note appears on each gate summary and in the gate email.
+//
+// Hard ceiling: at most four AI calls per buyer (one per gate + the package),
+// enforced in the database, so cost per buyer is capped no matter what.
+return [
+    'enabled'         => true,
+    'provider'        => 'anthropic',
+    'api_key'         => 'YOUR_ANTHROPIC_API_KEY',
+    'model'           => 'YOUR_CHOSEN_MODEL_ID',
+    'max_tokens'      => 400,
+    'timeout_seconds' => 20,
+];

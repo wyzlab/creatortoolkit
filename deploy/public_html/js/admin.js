@@ -21,12 +21,19 @@
       var gateBits = s.gates.map(function (x) {
         return '<div class="stat"><span class="stat__num">' + x.completed + '</span><span class="stat__label">' + esc(x.label) + ' done</span></div>';
       }).join('');
+      var ai = s.ai || {};
+      var em = s.emails || {};
+      var emFailBit = em.failed ? '<div class="stat stat--warn"><span class="stat__num">' + em.failed + '</span><span class="stat__label">Emails failed</span></div>' : '';
+      var aiFailBit = ai.failed ? '<div class="stat stat--warn"><span class="stat__num">' + ai.failed + '</span><span class="stat__label">AI notes failed</span></div>' : '';
       g.innerHTML =
         '<div class="stat"><span class="stat__num">' + s.buyers + '</span><span class="stat__label">Buyers</span></div>' +
         '<div class="stat"><span class="stat__num">' + s.codes.unclaimed + '</span><span class="stat__label">Codes unused</span></div>' +
         '<div class="stat"><span class="stat__num">' + s.codes.claimed + '</span><span class="stat__label">Codes used</span></div>' +
         gateBits +
-        '<div class="stat"><span class="stat__num">' + s.emails.queued + '</span><span class="stat__label">Emails queued</span></div>';
+        '<div class="stat"><span class="stat__num">' + (em.sent || 0) + '</span><span class="stat__label">Emails sent</span></div>' +
+        '<div class="stat"><span class="stat__num">' + (em.queued || 0) + '</span><span class="stat__label">Emails queued</span></div>' +
+        '<div class="stat"><span class="stat__num">' + (ai.ok || 0) + '</span><span class="stat__label">AI notes written</span></div>' +
+        emFailBit + aiFailBit;
 
       var tbl = T.el('[data-dropoff]', root);
       tbl.querySelector('tbody').innerHTML = s.dropoff.map(function (d) {

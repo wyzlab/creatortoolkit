@@ -40,6 +40,9 @@ if ($handover === null) {
     fail('That gate is not complete yet.', 409);
 }
 
+// Post-commit: AI coach note + gate email (never inside the transaction).
+$handover = finalize_gate_after_commit($pdo, $uid, $gate, $handover);
+
 json_out([
     'ok' => true,
     'summary' => $handover['summary_html'],

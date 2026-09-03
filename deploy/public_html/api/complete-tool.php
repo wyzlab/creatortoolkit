@@ -108,6 +108,11 @@ try {
     fail('We could not save your result just now. Your answers are still saved. Please try again.', 500);
 }
 
+// Post-commit: AI coach note + gate email (never inside the transaction).
+if ($gateComplete && $handover) {
+    $handover = finalize_gate_after_commit($pdo, $uid, $gate, $handover);
+}
+
 $out = [
     'ok' => true,
     'result' => ['json' => $resJson, 'html' => $resHtml],
@@ -117,6 +122,7 @@ $out = [
 if ($gateComplete && $handover) {
     $out['wyzai_code']         = $handover['wyzai_code'];
     $out['coach_name']         = $handover['coach_name'];
+    $out['ai_paragraph']       = $handover['ai_paragraph'] ?? null;
     $out['next_gate_unlocked'] = $handover['next_gate_unlocked'];
 }
 json_out($out);
