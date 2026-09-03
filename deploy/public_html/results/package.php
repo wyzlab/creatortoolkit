@@ -23,17 +23,11 @@ if (!$row || $row['completed_at'] === null) {
     redirect('/dashboard.php');
 }
 
-// Ensure the package is closed (idempotent), then read it.
-try {
-    $pdo->beginTransaction();
-    $handover = close_package($pdo, $uid);
-    $pdo->commit();
-} catch (\Throwable $e) {
-    if ($pdo->inTransaction()) $pdo->rollBack();
-    $handover = null;
-}
+// Ensure the package is closed, generate the AI note, and email once (idempotent).
+$handover = finalize_package_after_commit($pdo, $uid);
 
 $summaryHtml = $handover['summary_html'] ?? '';
+$aiParagraph = $handover['ai_paragraph'] ?? null;
 $coach = $handover['coach_name'] ?? null;
 $code  = $handover['wyzai_code'] ?? null;
 $hasRealCode = $code && strpos($code, 'PLACEHOLDER') === false;
@@ -57,6 +51,13 @@ require __DIR__ . '/../inc/head.php';
     </div>
     <div class="tool-step">
       <?= $summaryHtml ?>
+
+      <?php if ($aiParagraph !== null && trim($aiParagraph) !== ''): ?>
+      <div class="coach-note">
+        <h3>A note from your coach</h3>
+        <p><?= nl2br(e($aiParagraph)) ?></p>
+      </div>
+      <?php endif; ?>
 
       <?php if ($coach): ?>
       <div class="coach-handover">

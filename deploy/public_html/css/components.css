@@ -214,6 +214,11 @@
 .verdict--pending  { border-color: var(--mid-gray); }
 .verdict--pending .verdict__badge { background: var(--track); color: var(--dark-gray); }
 
+/* ── Coach note (AI paragraph) ───────────────────────────────────────── */
+.coach-note { background: var(--light-gray); border-left: 4px solid var(--wyz-cyan); border-radius: var(--radius-sm); padding: var(--space-md); margin: var(--space-md) 0; }
+.coach-note h3 { margin-bottom: var(--space-xs); font-size: 15px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); }
+.coach-note p { margin: 0; color: var(--ink); }
+
 /* ── Coach handover + unlocked PDFs ──────────────────────────────────── */
 .coach-handover { background: var(--wyz-navy); color: var(--white); border-radius: var(--radius-md); padding: var(--space-lg); margin: var(--space-lg) 0; }
 .coach-handover h3 { color: var(--wyz-gold); }
@@ -229,6 +234,8 @@
 .stat { background: var(--light-gray); border-radius: var(--radius-md); padding: var(--space-md); text-align: center; }
 .stat__num { display: block; font-family: var(--font-heading); font-weight: 800; font-size: 26px; color: var(--wyz-navy); }
 .stat__label { display: block; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+.stat--warn { background: #fdecea; }
+.stat--warn .stat__num { color: #b3261e; }
 .admin-table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 480px; }
 .admin-table th, .admin-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--light-gray); }
 .admin-table th { font-family: var(--font-heading); color: var(--wyz-navy); font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; }

@@ -29,6 +29,7 @@ foreach ($g->fetchAll() as $r) {
         'unlocked' => $r['unlocked_at'] !== null,
         'completed' => $r['completed_at'] !== null,
         'summary_html' => $sum['summary_html'] ?? null,
+        'ai_paragraph' => $sum['ai_paragraph'] ?? null,
     ];
 }
 

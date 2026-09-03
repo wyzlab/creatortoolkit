@@ -19,11 +19,12 @@ if (!isset(GATES[$gate])) { redirect('/dashboard.php'); }
 // The gate must be complete. If its tools are all done but it was not closed
 // yet, close it now (idempotent). Otherwise send them back to the dashboard.
 $pdo = db();
-$gr = $pdo->prepare('SELECT summary_html FROM gate_results WHERE user_id = ? AND gate_number = ? LIMIT 1');
+$gr = $pdo->prepare('SELECT summary_html, ai_paragraph FROM gate_results WHERE user_id = ? AND gate_number = ? LIMIT 1');
 $gr->execute([$uid, $gate]);
 $summaryRow = $gr->fetch();
 
 $handover = null;
+$aiParagraph = null;
 if (!$summaryRow) {
     try {
         $pdo->beginTransaction();
@@ -33,11 +34,15 @@ if (!$summaryRow) {
         if ($pdo->inTransaction()) $pdo->rollBack();
     }
     if ($handover === null) { redirect('/dashboard.php?locked=' . $gate); }
+    // Post-commit: AI coach note + gate email.
+    $handover = finalize_gate_after_commit($pdo, $uid, $gate, $handover);
     $summaryHtml = $handover['summary_html'];
+    $aiParagraph = $handover['ai_paragraph'] ?? null;
     $coach = $handover['coach_name'];
     $code  = $handover['wyzai_code'];
 } else {
     $summaryHtml = $summaryRow['summary_html'];
+    $aiParagraph = $summaryRow['ai_paragraph'] ?? null;
     // Fetch the coach code already claimed for this gate (no new slot).
     $c = $pdo->prepare('SELECT c.code, c.coach_name FROM wyzai_code_claims cl
                          JOIN wyzai_codes c ON c.id = cl.wyzai_code_id
@@ -69,6 +74,13 @@ require __DIR__ . '/../inc/head.php';
 
     <div class="tool-step">
       <?= $summaryHtml /* built server-side from a whitelist, already escaped */ ?>
+
+      <?php if ($aiParagraph !== null && trim($aiParagraph) !== ''): ?>
+      <div class="coach-note">
+        <h3>A note from your coach</h3>
+        <p><?= nl2br(e($aiParagraph)) ?></p>
+      </div>
+      <?php endif; ?>
 
       <?php if ($coach): ?>
       <div class="coach-handover">

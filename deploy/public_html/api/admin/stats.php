@@ -39,15 +39,20 @@ foreach (TOOLS as $slug => $t) {
     ];
 }
 
+$sentEmails   = (int)$pdo->query("SELECT COUNT(*) FROM email_log WHERE status='sent'")->fetchColumn();
 $failedEmails = (int)$pdo->query("SELECT COUNT(*) FROM email_log WHERE status='failed'")->fetchColumn();
 $queuedEmails = (int)$pdo->query("SELECT COUNT(*) FROM email_log WHERE status='queued'")->fetchColumn();
-$failedAi     = (int)$pdo->query("SELECT COUNT(*) FROM ai_log WHERE status='failed'")->fetchColumn();
+
+$aiOk      = (int)$pdo->query("SELECT COUNT(*) FROM ai_log WHERE status='ok'")->fetchColumn();
+$aiFailed  = (int)$pdo->query("SELECT COUNT(*) FROM ai_log WHERE status='failed'")->fetchColumn();
+$aiSkipped = (int)$pdo->query("SELECT COUNT(*) FROM ai_log WHERE status='skipped'")->fetchColumn();
+$aiTokens  = (int)$pdo->query("SELECT COALESCE(SUM(tokens_in + tokens_out),0) FROM ai_log")->fetchColumn();
 
 json_out([
     'buyers' => $buyers,
     'gates' => $gates,
     'dropoff' => $dropoff,
     'codes' => code_counts($pdo),
-    'emails' => ['failed' => $failedEmails, 'queued' => $queuedEmails],
-    'ai' => ['failed' => $failedAi],
+    'emails' => ['sent' => $sentEmails, 'failed' => $failedEmails, 'queued' => $queuedEmails],
+    'ai' => ['ok' => $aiOk, 'failed' => $aiFailed, 'skipped' => $aiSkipped, 'tokens' => $aiTokens],
 ]);

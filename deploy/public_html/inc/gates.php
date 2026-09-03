@@ -14,6 +14,7 @@ require_once __DIR__ . '/tools.php';
 require_once __DIR__ . '/results.php';
 require_once __DIR__ . '/wyzai.php';
 require_once __DIR__ . '/mailer.php';
+require_once __DIR__ . '/ai.php';
 
 /** Recount completed tools in a gate and store it. Returns [completed, required]. */
 function recount_gate(PDO $pdo, int $userId, int $gate): array
@@ -86,27 +87,16 @@ function close_gate(PDO $pdo, int $userId, int $gate): ?array
         $nextUnlocked = true;
     }
 
-    // Store the gate result.
+    // Store the gate result. The AI paragraph is written post-commit by
+    // finalize_gate_after_commit() so a slow AI call never holds a row lock.
     $pdo->prepare('INSERT INTO gate_results (user_id, gate_number, summary_json, summary_html, ai_paragraph, created_at)
                    VALUES (?, ?, ?, ?, NULL, ?)
                    ON DUPLICATE KEY UPDATE summary_json = VALUES(summary_json), summary_html = VALUES(summary_html)')
         ->execute([$userId, $gate, json_encode($summaryJson), $summaryHtml, $nowStr]);
 
-    // Log the AI call as skipped until a provider is configured (Stage E).
-    $aiCfg = require CONFIG_DIR . '/ai.php';
-    if (empty($aiCfg['enabled'])) {
-        $pdo->prepare('INSERT IGNORE INTO ai_log (user_id, trigger_key, status, created_at)
-                       VALUES (?, ?, "skipped", ?)')
-            ->execute([$userId, 'gate_' . $gate, $nowStr]);
-    }
-
-    // Queue the gate-complete email (sent for real at Stage E).
-    queue_gate_email($pdo, $userId, $gate, $summaryHtml, $claim);
-
-    // The last gate finishing means the whole toolkit is done: close the package.
-    if (!isset(GATES[$gate + 1])) {
-        close_package($pdo, $userId);
-    }
+    // When the last gate finishes, the whole toolkit is done — but the package
+    // is closed post-commit by finalize_gate_after_commit(), so its email and
+    // AI note are sent exactly once (closing it here would swallow that email).
 
     return [
         'summary_html' => $summaryHtml,
@@ -119,13 +109,13 @@ function close_gate(PDO $pdo, int $userId, int $gate): ?array
 }
 
 /**
- * Close the full package (gate_number 0): claim the Community Designer code,
- * store the package summary, and queue the package email. Idempotent.
- * Call inside a transaction.
+ * Close the full package (gate_number 0): claim the Community Designer code and
+ * store the package summary. Idempotent. Call inside a transaction. The AI note
+ * and package email are sent post-commit by finalize_package_after_commit().
  */
 function close_package(PDO $pdo, int $userId): ?array
 {
-    $gr = $pdo->prepare('SELECT summary_html FROM gate_results WHERE user_id = ? AND gate_number = 0 LIMIT 1');
+    $gr = $pdo->prepare('SELECT summary_html, ai_paragraph FROM gate_results WHERE user_id = ? AND gate_number = 0 LIMIT 1');
     $gr->execute([$userId]);
     $existing = $gr->fetch();
 
@@ -133,7 +123,9 @@ function close_package(PDO $pdo, int $userId): ?array
 
     if ($existing) {
         return ['summary_html' => $existing['summary_html'],
-                'wyzai_code' => $claim['code'] ?? null, 'coach_name' => $claim['coach_name'] ?? null];
+                'ai_paragraph' => $existing['ai_paragraph'],
+                'wyzai_code' => $claim['code'] ?? null, 'coach_name' => $claim['coach_name'] ?? null,
+                'already' => true];
     }
 
     $nowStr = now_dt();
@@ -142,32 +134,87 @@ function close_package(PDO $pdo, int $userId): ?array
     $profile = json_decode((string)$pf->fetchColumn() ?: '{}', true) ?: [];
     [$sumJson, $sumHtml] = build_gate_summary(0, $profile);
 
+    // The AI note and the package email are sent post-commit by
+    // finalize_package_after_commit().
     $pdo->prepare('INSERT INTO gate_results (user_id, gate_number, summary_json, summary_html, ai_paragraph, created_at)
                    VALUES (?, 0, ?, ?, NULL, ?)
                    ON DUPLICATE KEY UPDATE summary_html = VALUES(summary_html)')
         ->execute([$userId, json_encode($sumJson), $sumHtml, $nowStr]);
 
-    $aiCfg = require CONFIG_DIR . '/ai.php';
-    if (empty($aiCfg['enabled'])) {
-        $pdo->prepare('INSERT IGNORE INTO ai_log (user_id, trigger_key, status, created_at) VALUES (?, "package", "skipped", ?)')
-            ->execute([$userId, $nowStr]);
+    return ['summary_html' => $sumHtml, 'ai_paragraph' => null,
+            'wyzai_code' => $claim['code'] ?? null, 'coach_name' => $claim['coach_name'] ?? null,
+            'already' => false];
+}
+
+/**
+ * Post-commit finalizer for a gate: called AFTER the gate-close transaction has
+ * committed. On a fresh close it generates the AI coach note (best effort) and
+ * queues the gate email with that note included; on the last gate it also
+ * finalizes the package. Idempotent — a revisit (already closed) does nothing
+ * and simply returns the handover it was given.
+ */
+function finalize_gate_after_commit(PDO $pdo, int $userId, int $gate, array $handover): array
+{
+    if (!empty($handover['already'])) {
+        return $handover;   // AI note + email already handled on first close
     }
 
-    // Queue the package-complete email.
-    $u = $pdo->prepare('SELECT email FROM users WHERE id = ? LIMIT 1');
-    $u->execute([$userId]);
-    $email = (string)$u->fetchColumn();
-    if ($email !== '') {
-        $coach = $claim['coach_name'] ?? '';
-        $code  = $claim['code'] ?? '';
-        $codeLine = ($code !== '' && strpos($code, 'PLACEHOLDER') === false) ? '<p>Your <strong>' . e($coach) . '</strong> code is <strong>' . e($code) . '</strong>.</p>' : '';
-        $subject = 'You finished the DIY Creator Starter Toolkit';
-        $html = $sumHtml . $codeLine . '<p><a href="' . e(APP['app_url']) . '/results/package.php">Open your full package</a></p>';
-        $text = strip_tags($sumHtml) . "\n\nOpen your full package: " . APP['app_url'] . "/results/package.php\n";
-        mail_queue('package_complete', $email, $subject, $html, $text, $userId);
-    }
+    $ai = ai_generate_for_gate($pdo, $userId, $gate);
+    $handover['ai_paragraph'] = $ai;
 
-    return ['summary_html' => $sumHtml, 'wyzai_code' => $claim['code'] ?? null, 'coach_name' => $claim['coach_name'] ?? null];
+    queue_gate_email($pdo, $userId, $gate, $handover['summary_html'], $ai,
+                     ['code' => $handover['wyzai_code'] ?? null, 'coach_name' => $handover['coach_name'] ?? null]);
+
+    // Finishing the last gate finishes the whole toolkit: close the package,
+    // write its note, and send its email — all post-commit, exactly once.
+    if (!isset(GATES[$gate + 1])) {
+        finalize_package_after_commit($pdo, $userId);
+    }
+    return $handover;
+}
+
+/**
+ * Post-commit finalizer for the full package (gate 0). Ensures the package is
+ * closed (idempotent), generates its AI note, and queues the package email
+ * exactly once. Returns the package handover.
+ */
+function finalize_package_after_commit(PDO $pdo, int $userId): ?array
+{
+    // Ensure the package result row exists (idempotent). Runs in its own tx so
+    // it is safe to call standalone from results/package.php.
+    try {
+        $pdo->beginTransaction();
+        $handover = close_package($pdo, $userId);
+        $pdo->commit();
+    } catch (\Throwable $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        return null;
+    }
+    if ($handover === null) return null;
+
+    $ai = ai_generate_for_gate($pdo, $userId, 0);
+    $handover['ai_paragraph'] = $ai;
+
+    if (empty($handover['already'])) {
+        $u = $pdo->prepare('SELECT email FROM users WHERE id = ? LIMIT 1');
+        $u->execute([$userId]);
+        $email = (string)$u->fetchColumn();
+        if ($email !== '') {
+            $coach = $handover['coach_name'] ?? '';
+            $code  = $handover['wyzai_code'] ?? '';
+            $aiHtml = ($ai !== null && $ai !== '') ? '<p>' . nl2br(e($ai)) . '</p>' : '';
+            $aiText = ($ai !== null && $ai !== '') ? $ai . "\n\n" : '';
+            $codeLine = ($code !== '' && strpos($code, 'PLACEHOLDER') === false)
+                ? '<p>Your <strong>' . e($coach) . '</strong> code is <strong>' . e($code) . '</strong>.</p>' : '';
+            $subject = 'You finished the DIY Creator Starter Toolkit';
+            $html = $handover['summary_html'] . $aiHtml . $codeLine
+                  . '<p><a href="' . e(APP['app_url']) . '/results/package.php">Open your full package</a></p>';
+            $text = strip_tags($handover['summary_html']) . "\n\n" . $aiText
+                  . 'Open your full package: ' . APP['app_url'] . "/results/package.php\n";
+            mail_queue('package_complete', $email, $subject, $html, $text, $userId);
+        }
+    }
+    return $handover;
 }
 
 /** Is a gate unlocked for a user? (small helper, no include of guard needed) */
@@ -179,8 +226,8 @@ function gate_unlocked_bool(PDO $pdo, int $userId, int $gate): bool
     return $r && $r['unlocked_at'] !== null;
 }
 
-/** Queue the gate-complete email with unlocked PDFs and the coach code. */
-function queue_gate_email(PDO $pdo, int $userId, int $gate, string $summaryHtml, ?array $claim): void
+/** Queue the gate-complete email with the coach note, unlocked PDFs, and code. */
+function queue_gate_email(PDO $pdo, int $userId, int $gate, string $summaryHtml, ?string $aiParagraph, ?array $claim): void
 {
     $u = $pdo->prepare('SELECT email FROM users WHERE id = ? LIMIT 1');
     $u->execute([$userId]);
@@ -195,11 +242,15 @@ function queue_gate_email(PDO $pdo, int $userId, int $gate, string $summaryHtml,
     $codeLineHtml = ($code !== '' && strpos($code, 'PLACEHOLDER') === false)
         ? '<p>Your <strong>' . e($coach) . '</strong> code is <strong>' . e($code) . '</strong>.</p>' : '';
 
+    $ai = ($aiParagraph !== null) ? trim($aiParagraph) : '';
+    $aiHtml  = $ai !== '' ? '<p>' . nl2br(e($ai)) . '</p>' : '';
+    $aiText  = $ai !== '' ? $ai . "\n\n" : '';
+
     $subject = 'You cleared ' . $label . ' in your DIY Creator Starter Toolkit';
     $html = '<div style="font-family:Inter,Arial,sans-serif;max-width:600px">'
-          . $summaryHtml . $codeLineHtml
+          . $summaryHtml . $aiHtml . $codeLineHtml
           . '<p><a href="' . e(APP['app_url']) . '/dashboard.php">Back to your dashboard</a></p></div>';
-    $text = strip_tags($summaryHtml) . "\n\n" . $codeLine
+    $text = strip_tags($summaryHtml) . "\n\n" . $aiText . $codeLine
           . 'Dashboard: ' . APP['app_url'] . "/dashboard.php\n";
 
     mail_queue('gate_' . $gate . '_complete', $email, $subject, $html, $text, $userId);
