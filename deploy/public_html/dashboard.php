@@ -12,6 +12,12 @@ require_login();
 $user = current_user();
 $uid  = (int)$user['id'];
 
+// The learner's editable build title, shown above the gates (default "Offer 1").
+$pfRow = db()->prepare('SELECT profile_json FROM user_profile WHERE user_id = ? LIMIT 1');
+$pfRow->execute([$uid]);
+$profileArr   = json_decode((string)$pfRow->fetchColumn() ?: '{}', true) ?: [];
+$journeyTitle = trim((string)($profileArr['journey_title'] ?? '')) !== '' ? (string)$profileArr['journey_title'] : 'Offer 1';
+
 // Gate progress rows, keyed by gate number.
 $gp = [];
 $stmt = db()->prepare('SELECT gate_number, tools_required, tools_completed, unlocked_at, completed_at
@@ -47,6 +53,15 @@ require __DIR__ . '/inc/head.php';
       <span>That step is still locked. Finish the gate before it to open it.</span>
     </div>
   <?php endif; ?>
+
+  <div class="build-title" data-build-title>
+    <label class="build-title__label" for="build-title-input">This build</label>
+    <div class="build-title__row">
+      <input class="input build-title__input" id="build-title-input" value="<?= e($journeyTitle) ?>" maxlength="120" aria-label="Name this build">
+      <button type="button" class="btn btn--sm btn--primary" data-save-build-title>Save name</button>
+      <span class="autosave-flag" data-build-title-flag></span>
+    </div>
+  </div>
 
   <div class="journey">
     <?php foreach (GATES as $n => $gate):
