@@ -115,7 +115,12 @@ class ToolEngine {
       this.state.profileVersion = data.profile_version || 1;
       // "Create another offer" (fresh) starts blank; carry-forward prefill still
       // applies so the new offer keeps the learner's client and clarity work.
-      this.state.answers = this.cfg.fresh ? {} : (data.answers || {});
+      // Coerce to a plain object: an empty answer set arrives as [] (a JS array),
+      // and assigning string keys to an array is dropped by JSON.stringify — which
+      // would post an empty payload and make every required field read as missing.
+      const saved = data.answers;
+      this.state.answers = (!this.cfg.fresh && saved && typeof saved === 'object' && !Array.isArray(saved))
+        ? saved : {};
       this.state.prefill = data.prefill || {};
       this.state.currentStep = this.cfg.fresh
         ? 1

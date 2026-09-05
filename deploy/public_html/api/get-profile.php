@@ -40,6 +40,9 @@ $prefill = build_prefill($slug, $def, $profile, $answers);
 json_out([
     'profile_version' => $version,
     'prefill' => $prefill,
-    'answers' => $answers,
+    // Cast to an object so an empty set serializes as {} (a JSON object), not []
+    // (a JSON array). The client keeps answers as an object; an array there would
+    // silently drop string-keyed values on save/submit.
+    'answers' => (object)$answers,
     'current_step' => $currentStep,
 ]);

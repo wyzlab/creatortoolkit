@@ -42,14 +42,29 @@ try {
   const hasField = await p.evaluate(() => document.body.textContent.includes('Avatar name'));
   assert(hasField, 'avatar fields not rendered');
 
-  // Fill only step 1, then jump ahead and Finish: the engine should send us to
-  // the first missing required field, not a dead-end error.
-  await p.fill('input.input', 'CI Tester');
-  await p.evaluate(() => {
-    const engine = window.ToolEngine;  // sanity: engine present
-    return !!engine;
-  });
-  console.log('BROWSER OK: engine rendered step "' + title + '"');
+  // Complete the whole tool through the UI and assert a result renders. This
+  // guards the "answers post empty" bug: a fresh tool's answers arrive as [] (a
+  // JS array), and string keys assigned to an array vanish on JSON.stringify, so
+  // every required field would read as missing at Finish even when filled.
+  for (let i = 0; i < 9; i++) {
+    await p.evaluate(() => {
+      document.querySelectorAll('.tool-step [data-field] input[type=text], .tool-step [data-field] textarea').forEach((el, ix) => {
+        if (!el.value) { el.value = 'Answer ' + ix; el.dispatchEvent(new Event('input', { bubbles: true })); }
+      });
+      document.querySelectorAll('.tool-step [data-field] input[type=checkbox]').forEach((cb) => {
+        if (!cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); }
+      });
+    });
+    const isLast = await p.evaluate(() => !!document.querySelector('button.btn--cta'));
+    await p.locator('.tool-nav button').last().click();
+    await p.waitForTimeout(300);
+    if (isLast) break;
+  }
+  await p.waitForTimeout(500);
+  const finished = await p.evaluate(() => !!document.querySelector('.tool-result'));
+  const stillInvalid = await p.evaluate(() => document.querySelectorAll('[data-field].field--invalid').length);
+  assert(finished && stillInvalid === 0, 'tool did not complete through the UI (answers may be posting empty)');
+  console.log('BROWSER OK: engine rendered "' + title + '" and completed the tool');
 } finally {
   await browser.close();
 }
