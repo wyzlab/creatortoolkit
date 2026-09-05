@@ -52,12 +52,14 @@ require __DIR__ . '/../inc/head.php';
     <div class="tool-step">
       <?= $summaryHtml ?>
 
-      <?php if ($aiParagraph !== null && trim($aiParagraph) !== ''): ?>
+      <?php if (ai_notes_enabled() && $aiParagraph !== null && trim($aiParagraph) !== ''): ?>
       <div class="coach-note">
         <h3>A note from your coach</h3>
         <p><?= nl2br(e($aiParagraph)) ?></p>
       </div>
       <?php endif; ?>
+
+      <?php require __DIR__ . '/../inc/ask-wyzai.php'; ?>
 
       <?php if ($coach): ?>
       <div class="coach-handover">

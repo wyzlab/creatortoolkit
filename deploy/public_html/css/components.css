@@ -219,6 +219,10 @@
 .coach-note h3 { margin-bottom: var(--space-xs); font-size: 15px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); }
 .coach-note p { margin: 0; color: var(--ink); }
 
+.ask-wyzai { background: var(--light-gray); border-left: 4px solid var(--wyz-cyan); border-radius: var(--radius-sm); padding: var(--space-md); margin: var(--space-md) 0; }
+.ask-wyzai h3 { margin-bottom: var(--space-xs); font-size: 15px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); }
+.ask-wyzai p { margin: 0; color: var(--ink); }
+
 /* ── Coach handover + unlocked PDFs ──────────────────────────────────── */
 .coach-handover { background: var(--wyz-navy); color: var(--white); border-radius: var(--radius-md); padding: var(--space-lg); margin: var(--space-lg) 0; }
 .coach-handover h3 { color: var(--wyz-gold); }

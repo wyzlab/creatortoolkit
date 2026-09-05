@@ -25,6 +25,17 @@ function ai_config(): array
     return $cfg;
 }
 
+/**
+ * Whether AI-written notes may be shown to learners or included in email.
+ * Off until the (future, paid) AI is enabled in ai.local.php. While off, no AI
+ * text is ever displayed — even a note left over from an earlier test — and
+ * learners are pointed at the WyzAI chat widget instead.
+ */
+function ai_notes_enabled(): bool
+{
+    return !empty(ai_config()['enabled']);
+}
+
 /** trigger_key for a gate number (0 = the full package). */
 function ai_trigger_key(int $gate): string
 {
