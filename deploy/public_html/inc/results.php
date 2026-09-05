@@ -246,7 +246,7 @@ function build_gate_summary(int $gateNumber, array $profile): array
         $to    = (string)(profile_get($profile, 'clarity.offer_to') ?? profile_get($profile, 'avatar.desired_outcome') ?? '');
         $verdict = (string)(profile_get($profile, 'validation.verdict') ?? 'PENDING');
 
-        $body .= '<h2>Gate 1 complete: you got clear</h2>';
+        $body .= '<h2>Gate 1: You Got It Clear</h2>';
         $body .= '<p>You named who you help, what you teach, and what you offer. Here it is in one place.</p>';
         $body .= '<div class="result-highlight">';
         if ($niche !== '') $body .= '<p><strong>Niche:</strong> ' . e($niche) . '</p>';
@@ -260,7 +260,7 @@ function build_gate_summary(int $gateNumber, array $profile): array
         $offerPrice = (string)(profile_get($profile, 'offer.price') ?? '');
         $theme = (string)(profile_get($profile, 'sparker.theme') ?? '');
 
-        $body .= '<h2>Gate 2 complete: you built your offer</h2>';
+        $body .= '<h2>Gate 2: You Built Your Offer</h2>';
         $body .= '<p>You shaped an offer, sparked a course from your content, and audited it. Here it is in one place.</p>';
         $body .= '<div class="result-highlight">';
         if ($offerWho !== '') $body .= '<p><strong>Your offer:</strong> help ' . e($offerWho) . ' reach ' . e($offerResult)
@@ -270,7 +270,7 @@ function build_gate_summary(int $gateNumber, array $profile): array
         $json += ['offer_who' => $offerWho, 'theme' => $theme];
     } elseif ($gateNumber === 3) {
         $price = (string)(profile_get($profile, 'pricing.final_price') ?? profile_get($profile, 'pricing.headline') ?? '');
-        $body .= '<h2>Gate 3 complete: you can price, launch, and sell</h2>';
+        $body .= '<h2>Gate 3: You Can Price, Launch, and Sell</h2>';
         $body .= '<p>You set a price you can defend, mapped your first launch, and have a call script ready. You have finished the toolkit.</p>';
         $body .= '<div class="result-highlight">';
         if ($price !== '') $body .= '<p><strong>Your price:</strong> PHP ' . e($price) . '</p>';

@@ -84,18 +84,6 @@ require __DIR__ . '/../inc/head.php';
 
       <?php require __DIR__ . '/../inc/ask-wyzai.php'; ?>
 
-      <?php if ($coach): ?>
-      <div class="coach-handover">
-        <h3>Meet your <?= e($coach) ?></h3>
-        <?php if ($hasRealCode): ?>
-          <p>Use this code once to unlock your coach inside WyzAI.</p>
-          <p class="coach-handover__code"><?= e($code) ?></p>
-        <?php else: ?>
-          <p>Your <?= e($coach) ?> is being set up. Your code will appear here once the WyzAI agency is live.</p>
-        <?php endif; ?>
-      </div>
-      <?php endif; ?>
-
       <?php if ($pdfs): ?>
       <div class="unlocked-pdfs">
         <h3>Your downloads are unlocked</h3>
