@@ -220,7 +220,10 @@ function build_tool_result(string $slug, array $answers, array $profile): array
             $body .= '<h2>' . e($title) . '</h2><p>Your answers are saved.</p>';
     }
 
-    $html = '<div class="tool-result">' . $body . '</div>' . render_legal_blocks($slug);
+    // The Terms of Use and Proof of Authorship blocks are intentionally NOT shown
+    // on the on-screen result: the downloadable PDF already carries both. (The
+    // render_legal_blocks() helper in result-blocks.php is kept for reuse.)
+    $html = '<div class="tool-result">' . $body . '</div>';
     return [$json, $html];
 }
 
