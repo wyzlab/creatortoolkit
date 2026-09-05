@@ -77,13 +77,14 @@ const TOOLS = [
         'product_id' => 14641, 'published_on' => 'July 28, 2026', 'version' => '1.1',
         'pdf' => '05_content-to-course-sparker.pdf',
     ],
-    // Pick-one sibling of the Course Sparker. Placeholder product id and no PDF
-    // yet (both filled in once the real digital-product resource exists).
+    // Pick-one sibling of the Course Sparker (digital product). Real build and
+    // PDF are in place; product_id is still a placeholder until the WyzCore
+    // checkout link exists (only surfaced inside the PDF, not on screen).
     'content-to-digital-product-sparker' => [
         'gate' => 2, 'order' => 2,
-        'title' => 'Content-to-Digital-Product Sparker',
+        'title' => 'Content-to-Product Idea Sparker',
         'product_id' => 0, 'published_on' => '', 'version' => '1.0',
-        'pdf' => '',
+        'pdf' => '11_content-to-product-sparker.pdf',
     ],
     'course-design-checklist' => [
         'gate' => 2, 'order' => 3,

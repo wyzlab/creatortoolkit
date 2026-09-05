@@ -444,70 +444,83 @@ function tool_defs(): array
     // it forward either way. Completing either sparker satisfies the gate slot.
     'content-to-digital-product-sparker' => [
         'gate' => 2,
-        'title' => 'Content-to-Digital-Product Sparker',
-        'lede' => 'Turn your best content into a digital product people can buy and use: an ebook, template pack, toolkit, or preset set.',
+        'title' => 'Content-to-Product Idea Sparker',
+        'lede' => 'Turn the content you already make into a digital product people will pay for. Your content is market research you already ran.',
         'scoring' => ['type' => 'none'],
         'result' => 'product-spark-summary',
         'wyzai_prompt' =>
-            "I am a Filipino creator turning my content into a digital product (an ebook, template pack, toolkit, or preset set). My "
-            . "winning theme is [paste your theme]. My transformation is: after using this, my buyer can [paste transformation]. Here are "
-            . "the parts I drafted: [paste your part rows]. Please tighten this into a clear 3 to 5 part digital product. For each part give "
-            . "a sharp title, a one-line outcome, and one thing to include. Point out any part that does not move the buyer toward the "
-            . "transformation.",
+            "Act as my digital product coach. Here is content that gets the strongest response from my audience: [paste 3 to 5 "
+            . "examples]. Suggest three digital products I could make from it, the best format for each, who each is for, and a peso price "
+            . "range. Then pick the one I could ship this week and list what goes inside version one.",
         'writesToProfile' => [
-            'sparker.theme' => 'winning_theme', 'sparker.transformation' => 'transformation',
-            'sparker.module_1' => 'module_1', 'sparker.module_2' => 'module_2', 'sparker.module_3' => 'module_3',
-            'sparker.module_4' => 'module_4', 'sparker.module_5' => 'module_5', 'sparker.verdict' => 'verdict',
+            'sparker.theme' => 'winning_theme',
+            'sparker.transformation' => 'transformation',
+            'sparker.product_type' => 'product_type',
+            'sparker.starter_name' => 'starter_name',
+            'sparker.inside' => 'inside_v1',
+            'sparker.price' => 'price',
+            'sparker.validation' => 'validation_test',
         ],
         'steps' => [
             [
-                'title' => 'Mine your top content',
-                'help' => 'Start with your best or most-loved content. The questions people ask you again and again are gold.',
+                'title' => 'What does your audience keep reaching for?',
+                'help' => 'List your content that gets the strongest response. Look for saves, shares, comments, DMs, and "can you send me that?"',
                 'fields' => [
-                    ['key' => 'content_shortlist', 'type' => 'textarea', 'label' => 'Your content shortlist', 'hint' => 'List 8 to 10 of your best or most-loved pieces.', 'rows' => 4],
-                    ['key' => 'questions_asked', 'type' => 'textarea', 'label' => 'Questions people ask you again and again'],
+                    ['key' => 'most_saved', 'type' => 'textarea', 'label' => 'My most saved or shared posts or videos', 'rows' => 3],
+                    ['key' => 'questions_asked', 'type' => 'textarea', 'label' => 'Questions people ask me again and again', 'rows' => 3],
+                    ['key' => 'asked_to_send', 'type' => 'textarea', 'label' => 'Things clients or friends asked me to just send them', 'rows' => 3],
+                ],
+                'stuck' => 'If you had to send one file to help someone today, ano yun? That is a product clue.',
+            ],
+            [
+                'title' => 'Group the signals into one or two themes',
+                'help' => 'Look at your list. Circle the repeats. Most creators find one theme that keeps showing up.',
+                'fields' => [
+                    ['key' => 'theme_1', 'type' => 'text', 'label' => 'Theme 1 (the problem it solves)'],
+                    ['key' => 'theme_2', 'type' => 'text', 'label' => 'Theme 2 (optional)'],
+                    ['key' => 'winning_theme', 'type' => 'text', 'required' => true, 'label' => 'The one I get asked about most', 'hint' => 'One strong theme beats five weak ones. Pick the one with the most pull.'],
                 ],
             ],
             [
-                'title' => 'Cluster into themes, pick one winner',
-                'help' => 'Group your content into 2 to 4 themes, then pick the one your audience asks about most.',
+                'title' => 'Match your theme to a product type',
+                'help' => 'Pick the format you could ship this week, not the most impressive one. Small and done beats big and someday.',
                 'fields' => [
-                    ['key' => 'theme_1', 'type' => 'text', 'label' => 'Theme 1'],
-                    ['key' => 'theme_2', 'type' => 'text', 'label' => 'Theme 2'],
-                    ['key' => 'theme_3', 'type' => 'text', 'label' => 'Theme 3 (optional)'],
-                    ['key' => 'winning_theme', 'type' => 'text', 'required' => true, 'label' => 'My winning theme is', 'hint' => 'This is your digital product topic. One theme.'],
-                ],
-            ],
-            [
-                'title' => 'Name your transformation',
-                'help' => 'A strong digital product delivers one clear result. Be specific.',
-                'fields' => [
-                    ['key' => 'transformation', 'type' => 'textarea', 'required' => true, 'label' => 'After using this, my buyer can', 'placeholder' => 'e.g. plan a full month of content in one afternoon'],
-                ],
-            ],
-            [
-                'title' => 'Your digital product outline (3 to 5 parts)',
-                'help' => 'Break your winning theme into parts (sections, chapters, templates, or presets). Three strong parts beat six vague ones. This flows into your Checklist next.',
-                'fields' => [
-                    ['key' => 'module_1', 'type' => 'text', 'required' => true, 'label' => 'Part 1 (section, chapter, template, or preset)'],
-                    ['key' => 'module_2', 'type' => 'text', 'required' => true, 'label' => 'Part 2'],
-                    ['key' => 'module_3', 'type' => 'text', 'required' => true, 'label' => 'Part 3'],
-                    ['key' => 'module_4', 'type' => 'text', 'label' => 'Part 4 (optional)'],
-                    ['key' => 'module_5', 'type' => 'text', 'label' => 'Part 5 (optional)'],
-                ],
-            ],
-            [
-                'title' => 'Quick validate',
-                'help' => 'You do not need certainty. You need signal. Tick what is true.',
-                'fields' => [
-                    ['key' => 'validate', 'type' => 'checklist', 'label' => 'Tick what is true',
-                     'items' => [
-                        ['key' => 'v_asks', 'label' => 'My audience already asks about this theme'],
-                        ['key' => 'v_hours', 'label' => 'I can talk about it for hours'],
-                        ['key' => 'v_result', 'label' => 'I can name a clear result for my buyer'],
-                        ['key' => 'v_content', 'label' => 'Most parts already have existing content to pull from'],
+                    ['key' => 'product_type', 'type' => 'select', 'required' => true,
+                     'label' => 'Best product type for it', 'placeholder' => 'Choose a product format',
+                     'options' => [
+                        'Template (Notion, Canva, spreadsheet, doc)',
+                        'Toolkit or kit (a bundle of assets)',
+                        'Guide or ebook',
+                        'Swipe file or scripts',
+                        'Preset or asset pack',
+                        'Checklist or workbook',
+                        'Dashboard or tracker',
+                        'Mini-course or workshop',
                      ]],
-                    ['key' => 'verdict', 'type' => 'text', 'label' => 'My verdict', 'placeholder' => 'Go, or not yet and why'],
+                    ['key' => 'transformation', 'type' => 'textarea', 'required' => true, 'label' => 'What the buyer can do after using it (the result)', 'prefillFrom' => ['clarity.want', 'avatar.desired_outcome']],
+                ],
+            ],
+            [
+                'title' => 'Shrink it to a first, shippable version',
+                'help' => 'Name the smallest version of your product that still helps someone. That is your starter product.',
+                'fields' => [
+                    ['key' => 'starter_name', 'type' => 'text', 'label' => 'Starter product name (working title)'],
+                    ['key' => 'inside_v1', 'type' => 'textarea', 'label' => 'What is inside, version 1', 'rows' => 3],
+                    ['key' => 'price', 'type' => 'text', 'label' => 'Peso price I am considering', 'placeholder' => 'e.g. PHP 490'],
+                ],
+                'stuck' => 'Ang unang bersyon, hindi perpekto. Kailangan lang totoo at nakakatulong.',
+            ],
+            [
+                'title' => 'Test the demand, the free-at-the-top way',
+                'help' => 'Easlo and Thomas Frank gave a free version first, then sold the full one. Do a smaller version of the same test.',
+                'fields' => [
+                    ['key' => 'validate', 'type' => 'checklist', 'label' => 'How I will test',
+                     'items' => [
+                        ['key' => 'v_free', 'label' => 'Post a free mini version and watch saves and requests'],
+                        ['key' => 'v_waitlist', 'label' => 'Offer a waitlist or pre-order link and count sign-ups'],
+                        ['key' => 'v_ask5', 'label' => 'Ask five people who fit my buyer: would you pay for this, and why'],
+                     ]],
+                    ['key' => 'validation_test', 'type' => 'textarea', 'label' => 'My validation test this week is'],
                 ],
             ],
         ],
