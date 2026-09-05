@@ -61,7 +61,7 @@ post complete-tool.php '{"tool_slug":"ideal-client-avatar","answers":{"avatar_na
 pass "avatar completed"
 post complete-tool.php '{"tool_slug":"course-clarity-framework","answers":{"niche":"baking","learner_name":"Smoke","learner_role":"baker","learner_pain":"pricing","learner_want":"students","offer_from":"a","offer_to":"b"}}' >/dev/null
 pass "clarity completed"
-C3="$(post complete-tool.php '{"tool_slug":"course-idea-validation","answers":{"idea_sentence":"a class","audience":"bakers","outcome":"launch","threshold":"10","threshold_number":10,"commitments_number":12,"signals":{"sig_painful":true}}}')"
+C3="$(post complete-tool.php '{"tool_slug":"course-idea-validation","answers":{"offer_type":"Online course","idea_sentence":"a class","audience":"bakers","outcome":"launch","threshold":"10","threshold_number":10,"commitments_number":12,"signals":{"sig_painful":true}}}')"
 [ "$(echo "$C3" | jqget "['gate_complete']")" = "True" ] || fail "gate not complete after 3 tools: $C3"
 [ "$(echo "$C3" | jqget "['result']['json']['verdict']")" = "GO" ] || fail "verdict not GO: $C3"
 pass "validation completed, Gate 1 closed, verdict GO"

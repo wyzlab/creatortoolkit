@@ -77,6 +77,9 @@ function build_tool_result(string $slug, array $answers, array $profile): array
             $body .= '<h2>Your verdict</h2>';
             $body .= '<div class="verdict verdict--' . strtolower($verdict) . '"><span class="verdict__badge">' . e($verdict) . '</span>';
             $body .= '<p>' . e($copy[$verdict]) . '</p></div>';
+            if (($answers['offer_type'] ?? '') !== '') {
+                $body .= rline('What you validated', (string)$answers['offer_type']);
+            }
             $body .= rline('Signal strength', $yes . ' of 7 signals present');
             $body .= rline('Your threshold', (string)($answers['threshold'] ?? ''));
             if (($answers['commitments_number'] ?? '') !== '') {

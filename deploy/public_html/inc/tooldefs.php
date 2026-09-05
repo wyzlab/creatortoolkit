@@ -229,15 +229,17 @@ function tool_defs(): array
     'course-idea-validation' => [
         'gate' => 1,
         'title' => 'Will It Sell? Validation Check',
-        'lede' => 'Find out if people will actually pay, before you build anything.',
+        'lede' => 'Find out if people will actually pay, before you build anything. Works for any offer: a course, digital product, membership, webinar, event, service, or physical product.',
         'scoring' => ['type' => 'banded', 'compute' => 'validation_verdict'],
         'result' => 'validation-verdict',
         'wyzai_prompt' =>
-            "Act as a course validation coach. My course idea is [describe your idea in one sentence]. My target audience is "
-            . "[who it is for]. The one result a buyer gets is [outcome]. Give me: (1) five short questions I can ask my audience "
-            . "to test if they actually want this, (2) a simple one-page pre-sell offer I can post, and (3) three low-cost ways to "
-            . "find whether people will pay before I build anything. Keep it practical and beginner friendly.",
+            "Act as an offer validation coach. My idea is [describe your offer in one sentence: a course, digital product, "
+            . "membership, webinar, event, service, or physical product]. My target audience is [who it is for]. The one result "
+            . "a buyer gets is [outcome]. Give me: (1) five short questions I can ask my audience to test if they actually want "
+            . "this, (2) a simple one-page pre-sell offer I can post, and (3) three low-cost ways to find whether people will pay "
+            . "before I build anything. Keep it practical and beginner friendly.",
         'writesToProfile' => [
+            'validation.offer_type' => 'offer_type',
             'validation.idea' => 'idea_sentence',
             'validation.audience' => 'audience',
             'validation.outcome' => 'outcome',
@@ -249,8 +251,15 @@ function tool_defs(): array
                 'title' => 'What are you checking?',
                 'help' => 'Your Clarity work carries over. Edit if this idea is different.',
                 'fields' => [
+                    ['key' => 'offer_type', 'type' => 'select', 'required' => true,
+                     'label' => 'What are you validating?', 'placeholder' => 'Choose the type of offer',
+                     'options' => [
+                        'Online course', 'Digital product (ebook, template, preset)', 'Membership or community',
+                        'Webinar or workshop', 'Event or ticket', 'Service or coaching package',
+                        'Physical product', 'Other',
+                     ]],
                     ['key' => 'idea_sentence', 'type' => 'textarea', 'required' => true,
-                     'label' => 'Your course idea in one sentence', 'prefillFrom' => 'avatar.positioning'],
+                     'label' => 'Your idea in one sentence', 'prefillFrom' => 'avatar.positioning'],
                     ['key' => 'audience', 'type' => 'text', 'required' => true,
                      'label' => 'Who it is for', 'prefillFrom' => ['clarity.learner_role', 'avatar.role']],
                     ['key' => 'outcome', 'type' => 'textarea', 'required' => true,
@@ -292,7 +301,7 @@ function tool_defs(): array
                     ['key' => 'threshold_number', 'type' => 'number', 'label' => 'That threshold as a number of commitments', 'placeholder' => 'e.g. 10'],
                     ['key' => 'commitments_number', 'type' => 'number', 'label' => 'Real commitments I actually got (leave blank until you have tested)', 'placeholder' => 'e.g. 12'],
                 ],
-                'stuck' => 'A "no" now is cheaper than a "no" after two months of recording. If you have not tested yet, finish anyway. Your verdict will wait for you as PENDING.',
+                'stuck' => 'A "no" now is cheaper than a "no" after two months of building it. If you have not tested yet, finish anyway. Your verdict will wait for you as PENDING.',
             ],
         ],
     ],
