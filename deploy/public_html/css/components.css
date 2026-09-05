@@ -264,6 +264,14 @@
 .build-title__label { display: block; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 4px; }
 .build-title__row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-sm); }
 .build-title__input { flex: 1 1 260px; max-width: 480px; font-family: var(--font-heading); font-weight: 800; font-size: 22px; color: var(--wyz-navy); }
+.build-title__display { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-sm); }
+.build-title__name { font-family: var(--font-heading); font-weight: 800; font-size: 22px; color: var(--wyz-navy); }
+
+/* The build title shown atop each tool page, so the learner always knows
+   which offer they are working on. */
+.build-banner { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-sm); margin-bottom: var(--space-sm); }
+.build-banner__label { font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.build-banner__name { font-family: var(--font-heading); font-weight: 800; font-size: 18px; color: var(--wyz-navy); }
 
 /* ── Coach handover + unlocked PDFs ──────────────────────────────────── */
 .coach-handover { background: var(--wyz-navy); color: var(--white); border-radius: var(--radius-md); padding: var(--space-lg); margin: var(--space-lg) 0; }

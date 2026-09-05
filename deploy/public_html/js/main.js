@@ -75,22 +75,49 @@
     btn.addEventListener('click', function () { window.print(); });
   });
 
-  // Save the editable build title shown above the gates.
-  els('[data-save-build-title]').forEach(function (btn) {
-    btn.addEventListener('click', async function () {
-      var input = el('#build-title-input');
-      var flag = el('[data-build-title-flag]');
+  // Editable build title above the gates: show plain text, reveal the input
+  // only while editing, and collapse back to text after saving.
+  (function () {
+    var wrap = el('[data-build-title]');
+    if (!wrap) return;
+    var display = el('[data-build-display]', wrap);
+    var edit    = el('[data-build-edit]', wrap);
+    var input   = el('#build-title-input', wrap);
+    var nameEl  = el('[data-build-name]', wrap);
+    var flag    = el('[data-build-title-flag]', wrap);
+
+    function show(mode) {
+      if (display) display.hidden = (mode !== 'display');
+      if (edit) edit.hidden = (mode !== 'edit');
+    }
+
+    var editBtn = el('[data-edit-build-title]', wrap);
+    if (editBtn) editBtn.addEventListener('click', function () {
+      if (input && nameEl) input.value = nameEl.textContent.trim();
+      if (flag) flag.textContent = '';
+      show('edit');
+      if (input) { input.focus(); input.select(); }
+    });
+
+    var cancelBtn = el('[data-cancel-build-title]', wrap);
+    if (cancelBtn) cancelBtn.addEventListener('click', function () { show('display'); });
+
+    var saveBtn = el('[data-save-build-title]', wrap);
+    if (saveBtn) saveBtn.addEventListener('click', async function () {
       if (!input) return;
       if (flag) { flag.textContent = 'Saving...'; flag.className = 'autosave-flag'; }
       try {
         var r = await apiPost('/api/save-journey-title.php', { title: input.value });
-        if (r && r.title) input.value = r.title;
-        if (flag) { flag.textContent = 'Saved'; flag.className = 'autosave-flag autosave-flag--saved'; }
+        var t = (r && r.title) || input.value;
+        if (nameEl) nameEl.textContent = t;
+        input.value = t;
+        if (flag) flag.textContent = '';
+        show('display');
       } catch (e) {
         if (flag) { flag.textContent = 'Not saved'; flag.className = 'autosave-flag'; }
       }
     });
-  });
+  })();
 
   // Show/hide password: toggle the controlled input between dots and text.
   els('[data-pw-toggle]').forEach(function (btn) {

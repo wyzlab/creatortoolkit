@@ -55,10 +55,15 @@ require __DIR__ . '/inc/head.php';
   <?php endif; ?>
 
   <div class="build-title" data-build-title>
-    <label class="build-title__label" for="build-title-input">This build</label>
-    <div class="build-title__row">
+    <span class="build-title__label">This build</span>
+    <div class="build-title__display" data-build-display>
+      <span class="build-title__name" data-build-name><?= e($journeyTitle) ?></span>
+      <button type="button" class="btn btn--sm btn--ghost" data-edit-build-title>Edit</button>
+    </div>
+    <div class="build-title__row" data-build-edit hidden>
       <input class="input build-title__input" id="build-title-input" value="<?= e($journeyTitle) ?>" maxlength="120" aria-label="Name this build">
       <button type="button" class="btn btn--sm btn--primary" data-save-build-title>Save name</button>
+      <button type="button" class="btn btn--sm btn--ghost" data-cancel-build-title>Cancel</button>
       <span class="autosave-flag" data-build-title-flag></span>
     </div>
   </div>
