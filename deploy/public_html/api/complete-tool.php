@@ -88,12 +88,23 @@ try {
                    VALUES (?, ?, ?, ?, ?, ?)')
         ->execute([$sid, $uid, $slug, json_encode($resJson), $resHtml, $nowStr]);
 
-    // The One-Page Offer is snapshotted into the learner's saved offers, so they
-    // can keep several, print any to PDF, and start another. Additive; does not
-    // affect the gate journey or the single canonical result above.
+    // The One-Page Offer is saved into "My Offers". Editing the same offer
+    // UPDATES it (no duplicates); only "Create a new offer" (fresh) adds a new
+    // one. The current offer is tracked in the profile so a re-finish updates it.
     $savedOfferId = null;
     if ($slug === 'one-page-offer') {
-        $savedOfferId = save_offer($pdo, $uid, $answers, $resJson, $resHtml);
+        $fresh = !empty($in['fresh']);
+        $curId = (int)($profile['_current_offer_id'] ?? 0);
+        if (!$fresh && $curId > 0 && offer_exists_for_user($pdo, $uid, $curId)) {
+            update_offer($pdo, $uid, $curId, $answers, $resJson, $resHtml);
+            $savedOfferId = $curId;
+        } else {
+            $savedOfferId = save_offer($pdo, $uid, $answers, $resJson, $resHtml);
+        }
+        // Remember which offer the tool is editing, so re-finishing updates it.
+        $profile['_current_offer_id'] = $savedOfferId;
+        $pdo->prepare('UPDATE user_profile SET profile_json = ? WHERE user_id = ?')
+            ->execute([json_encode($profile), $uid]);
     }
 
     // Unlock the PDF for this tool, when it has one. (A tool may ship without a

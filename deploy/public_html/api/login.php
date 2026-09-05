@@ -54,4 +54,7 @@ $upd->execute([now_dt(), (int)$user['id']]);
 rate_limit_clear(rl_identifier('email:' . $email), 'login');
 rate_limit_clear(rl_identifier('ip:' . client_ip()), 'login');
 
-json_out(['ok' => true, 'redirect' => '/dashboard.php']);
+// Land on My Offers if they already have an offer, otherwise the gates journey.
+require_once __DIR__ . '/../inc/offers.php';
+$landing = user_offer_count(db(), (int)$user['id']) > 0 ? '/offers/' : '/dashboard.php';
+json_out(['ok' => true, 'redirect' => $landing]);

@@ -75,6 +75,23 @@
     btn.addEventListener('click', function () { window.print(); });
   });
 
+  // Save the editable build title shown above the gates.
+  els('[data-save-build-title]').forEach(function (btn) {
+    btn.addEventListener('click', async function () {
+      var input = el('#build-title-input');
+      var flag = el('[data-build-title-flag]');
+      if (!input) return;
+      if (flag) { flag.textContent = 'Saving...'; flag.className = 'autosave-flag'; }
+      try {
+        var r = await apiPost('/api/save-journey-title.php', { title: input.value });
+        if (r && r.title) input.value = r.title;
+        if (flag) { flag.textContent = 'Saved'; flag.className = 'autosave-flag autosave-flag--saved'; }
+      } catch (e) {
+        if (flag) { flag.textContent = 'Not saved'; flag.className = 'autosave-flag'; }
+      }
+    });
+  });
+
   // Show/hide password: toggle the controlled input between dots and text.
   els('[data-pw-toggle]').forEach(function (btn) {
     btn.addEventListener('click', function () {

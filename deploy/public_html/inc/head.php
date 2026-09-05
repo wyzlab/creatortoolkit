@@ -12,6 +12,13 @@ $pageTitle = $pageTitle ?? 'DIY Creator Starter Toolkit';
 $pageDesc  = $pageDesc  ?? 'A guided toolkit for Filipino coaches, consultants, and creators.';
 $bodyClass = $bodyClass ?? '';
 $loggedIn  = function_exists('is_logged_in') ? is_logged_in() : false;
+
+// Home for a logged-in learner: My Offers once they have one, else the gates.
+$homeHref = '/index.php';
+if ($loggedIn && function_exists('current_user')) {
+    require_once __DIR__ . '/offers.php';
+    $homeHref = user_offer_count(db(), (int)current_user()['id']) > 0 ? '/offers/' : '/dashboard.php';
+}
 ?><!DOCTYPE html>
 <html lang="en">
 <head>
@@ -35,7 +42,7 @@ $loggedIn  = function_exists('is_logged_in') ? is_logged_in() : false;
 
   <header class="site-header">
     <div class="wrap site-header__inner">
-      <a href="<?= $loggedIn ? '/dashboard.php' : '/index.php' ?>" class="site-header__brand">
+      <a href="<?= e($homeHref) ?>" class="site-header__brand">
         <span class="badge badge--studio">Studio Original</span>
         <span class="site-header__title">DIY Creator Starter Toolkit</span>
       </a>

@@ -38,6 +38,38 @@ function save_offer(PDO $pdo, int $userId, array $answers, array $resultJson, st
     return (int)$pdo->lastInsertId();
 }
 
+/** Replace an existing offer in place (an edit, not a new copy). */
+function update_offer(PDO $pdo, int $userId, int $id, array $answers, array $resultJson, string $resultHtml): void
+{
+    $stmt = $pdo->prepare(
+        'UPDATE offers SET title = ?, answers_json = ?, result_json = ?, result_html = ?, updated_at = ?
+          WHERE id = ? AND user_id = ?'
+    );
+    $stmt->execute([
+        offer_title_from_answers($answers),
+        json_encode($answers, JSON_UNESCAPED_UNICODE),
+        json_encode($resultJson, JSON_UNESCAPED_UNICODE),
+        $resultHtml,
+        now_dt(), $id, $userId,
+    ]);
+}
+
+/** Does this offer id belong to this user? */
+function offer_exists_for_user(PDO $pdo, int $userId, int $id): bool
+{
+    $s = $pdo->prepare('SELECT 1 FROM offers WHERE id = ? AND user_id = ? LIMIT 1');
+    $s->execute([$id, $userId]);
+    return (bool)$s->fetchColumn();
+}
+
+/** How many offers this user has saved. */
+function user_offer_count(PDO $pdo, int $userId): int
+{
+    $s = $pdo->prepare('SELECT COUNT(*) FROM offers WHERE user_id = ?');
+    $s->execute([$userId]);
+    return (int)$s->fetchColumn();
+}
+
 /** All of a user's offers, newest first (list view: no heavy columns). */
 function list_offers(PDO $pdo, int $userId): array
 {

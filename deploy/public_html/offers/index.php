@@ -59,7 +59,7 @@ require __DIR__ . '/../inc/head.php';
         <p class="mt-md">No offers yet. Click “Create a new offer” to make your first one.</p>
       <?php endif; ?>
 
-      <p class="mt-lg"><a class="btn btn--ghost" href="/dashboard.php">Back to dashboard</a></p>
+      <p class="mt-lg"><a class="btn btn--ghost" href="/dashboard.php">Go to my gates</a></p>
     </div>
   </div>
 </div>

@@ -560,8 +560,11 @@ class ToolEngine {
       const r = await api().apiPost('/api/complete-tool.php', {
         tool_slug: this.cfg.slug,
         answers: this.state.answers,
-        profile_version: this.state.profileVersion
+        profile_version: this.state.profileVersion,
+        fresh: !!this.cfg.fresh
       });
+      // After the first save, further finishes edit THIS offer (no duplicates).
+      this.cfg.fresh = false;
       this.state.completed = true;
       this.notice('', null);
       this.renderResult(r);
