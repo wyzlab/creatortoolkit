@@ -126,20 +126,18 @@ function build_tool_result(string $slug, array $answers, array $profile): array
             break;
 
         case 'product-spark-summary':
-            $body .= '<h2>Your digital product spark</h2>';
+            $starter = (string)($answers['starter_name'] ?? '');
+            $body .= '<h2>Your product idea: ' . e($starter !== '' ? $starter : 'ready to test') . '</h2>';
             $body .= rline('Winning theme', (string)($answers['winning_theme'] ?? ''));
-            $body .= rline('After using this, my buyer can', (string)($answers['transformation'] ?? ''));
-            $parts = [];
-            foreach (['module_1', 'module_2', 'module_3', 'module_4', 'module_5'] as $k) {
-                if (trim((string)($answers[$k] ?? '')) !== '') { $parts[] = (string)$answers[$k]; }
+            $body .= rline('Product type', (string)($answers['product_type'] ?? ''));
+            $body .= rline('What the buyer can do after', (string)($answers['transformation'] ?? ''));
+            $inside = (string)($answers['inside_v1'] ?? '');
+            if (trim($inside) !== '') {
+                $body .= '<div class="result-highlight"><h3>What is inside, version 1</h3><p>' . nl2br(e($inside)) . '</p></div>';
             }
-            if ($parts) {
-                $body .= '<div class="result-highlight"><h3>Your parts</h3><ol>';
-                foreach ($parts as $p) { $body .= '<li>' . e($p) . '</li>'; }
-                $body .= '</ol></div>';
-            }
-            $body .= rline('My verdict', (string)($answers['verdict'] ?? ''));
-            $json += ['theme' => $answers['winning_theme'] ?? '', 'parts' => count($parts)];
+            $body .= rline('Price I am considering', (string)($answers['price'] ?? ''));
+            $body .= rline('My validation test this week', (string)($answers['validation_test'] ?? ''));
+            $json += ['theme' => $answers['winning_theme'] ?? '', 'starter' => $starter, 'product_type' => $answers['product_type'] ?? ''];
             break;
 
         case 'checklist-scorecard':

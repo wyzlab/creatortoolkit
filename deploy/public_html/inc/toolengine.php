@@ -236,12 +236,18 @@ function compute_checklist_score(array $answers): array
  */
 function derive_profile(array &$profile, string $slug, array $answers): void
 {
-    if ($slug === 'content-to-course-sparker' || $slug === 'content-to-digital-product-sparker') {
+    if ($slug === 'content-to-course-sparker') {
         $mods = [];
         foreach (['module_1', 'module_2', 'module_3', 'module_4', 'module_5'] as $k) {
             if (!value_empty($answers[$k] ?? null)) { $mods[] = (string)$answers[$k]; }
         }
         if ($mods) { profile_set($profile, 'sparker.modules', implode("\n", $mods)); }
+    }
+    if ($slug === 'content-to-digital-product-sparker') {
+        // The product's "what is inside, version 1" becomes the modules block the
+        // 20-Point Checklist carries forward (Zone C), same slot as course modules.
+        $inside = (string)($answers['inside_v1'] ?? '');
+        if (trim($inside) !== '') { profile_set($profile, 'sparker.modules', $inside); }
     }
     if ($slug === 'course-idea-validation') {
         // The verdict is computed, not a form field, so store it for Gate 3 to use.
