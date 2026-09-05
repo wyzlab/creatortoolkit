@@ -438,6 +438,81 @@ function tool_defs(): array
         ],
     ],
 
+    // ══ GATE 2, TOOL 2 (alternative) ═════════════════════════════════════
+    // Pick-one sibling of the Course Sparker, for a digital product instead of
+    // a course. Writes the SAME sparker.* profile keys, so the Checklist carries
+    // it forward either way. Completing either sparker satisfies the gate slot.
+    'content-to-digital-product-sparker' => [
+        'gate' => 2,
+        'title' => 'Content-to-Digital-Product Sparker',
+        'lede' => 'Turn your best content into a digital product people can buy and use: an ebook, template pack, toolkit, or preset set.',
+        'scoring' => ['type' => 'none'],
+        'result' => 'product-spark-summary',
+        'wyzai_prompt' =>
+            "I am a Filipino creator turning my content into a digital product (an ebook, template pack, toolkit, or preset set). My "
+            . "winning theme is [paste your theme]. My transformation is: after using this, my buyer can [paste transformation]. Here are "
+            . "the parts I drafted: [paste your part rows]. Please tighten this into a clear 3 to 5 part digital product. For each part give "
+            . "a sharp title, a one-line outcome, and one thing to include. Point out any part that does not move the buyer toward the "
+            . "transformation.",
+        'writesToProfile' => [
+            'sparker.theme' => 'winning_theme', 'sparker.transformation' => 'transformation',
+            'sparker.module_1' => 'module_1', 'sparker.module_2' => 'module_2', 'sparker.module_3' => 'module_3',
+            'sparker.module_4' => 'module_4', 'sparker.module_5' => 'module_5', 'sparker.verdict' => 'verdict',
+        ],
+        'steps' => [
+            [
+                'title' => 'Mine your top content',
+                'help' => 'Start with your best or most-loved content. The questions people ask you again and again are gold.',
+                'fields' => [
+                    ['key' => 'content_shortlist', 'type' => 'textarea', 'label' => 'Your content shortlist', 'hint' => 'List 8 to 10 of your best or most-loved pieces.', 'rows' => 4],
+                    ['key' => 'questions_asked', 'type' => 'textarea', 'label' => 'Questions people ask you again and again'],
+                ],
+            ],
+            [
+                'title' => 'Cluster into themes, pick one winner',
+                'help' => 'Group your content into 2 to 4 themes, then pick the one your audience asks about most.',
+                'fields' => [
+                    ['key' => 'theme_1', 'type' => 'text', 'label' => 'Theme 1'],
+                    ['key' => 'theme_2', 'type' => 'text', 'label' => 'Theme 2'],
+                    ['key' => 'theme_3', 'type' => 'text', 'label' => 'Theme 3 (optional)'],
+                    ['key' => 'winning_theme', 'type' => 'text', 'required' => true, 'label' => 'My winning theme is', 'hint' => 'This is your digital product topic. One theme.'],
+                ],
+            ],
+            [
+                'title' => 'Name your transformation',
+                'help' => 'A strong digital product delivers one clear result. Be specific.',
+                'fields' => [
+                    ['key' => 'transformation', 'type' => 'textarea', 'required' => true, 'label' => 'After using this, my buyer can', 'placeholder' => 'e.g. plan a full month of content in one afternoon'],
+                ],
+            ],
+            [
+                'title' => 'Your digital product outline (3 to 5 parts)',
+                'help' => 'Break your winning theme into parts (sections, chapters, templates, or presets). Three strong parts beat six vague ones. This flows into your Checklist next.',
+                'fields' => [
+                    ['key' => 'module_1', 'type' => 'text', 'required' => true, 'label' => 'Part 1 (section, chapter, template, or preset)'],
+                    ['key' => 'module_2', 'type' => 'text', 'required' => true, 'label' => 'Part 2'],
+                    ['key' => 'module_3', 'type' => 'text', 'required' => true, 'label' => 'Part 3'],
+                    ['key' => 'module_4', 'type' => 'text', 'label' => 'Part 4 (optional)'],
+                    ['key' => 'module_5', 'type' => 'text', 'label' => 'Part 5 (optional)'],
+                ],
+            ],
+            [
+                'title' => 'Quick validate',
+                'help' => 'You do not need certainty. You need signal. Tick what is true.',
+                'fields' => [
+                    ['key' => 'validate', 'type' => 'checklist', 'label' => 'Tick what is true',
+                     'items' => [
+                        ['key' => 'v_asks', 'label' => 'My audience already asks about this theme'],
+                        ['key' => 'v_hours', 'label' => 'I can talk about it for hours'],
+                        ['key' => 'v_result', 'label' => 'I can name a clear result for my buyer'],
+                        ['key' => 'v_content', 'label' => 'Most parts already have existing content to pull from'],
+                     ]],
+                    ['key' => 'verdict', 'type' => 'text', 'label' => 'My verdict', 'placeholder' => 'Go, or not yet and why'],
+                ],
+            ],
+        ],
+    ],
+
     // ══ GATE 2, TOOL 3 ═══════════════════════════════════════════════════
     'course-design-checklist' => [
         'gate' => 2,

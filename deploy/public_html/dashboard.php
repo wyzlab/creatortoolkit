@@ -74,9 +74,22 @@ require __DIR__ . '/inc/head.php';
           <div class="progress__fill" style="width: <?= $need ? round($done / $need * 100) : 0 ?>%"></div>
         </div>
 
+        <?php
+          // Pick-one groups: which slugs are alternatives, and is the group filled.
+          $pickSatisfied = [];   // slug => true if this slug's group is already satisfied
+          $pickMember    = [];   // slug => true if it belongs to a pick-one group
+          foreach (gate_choose_one_groups($n) as $group) {
+              $groupDone = false;
+              foreach ($group as $s) { if (($ts[$s] ?? '') === 'completed') { $groupDone = true; break; } }
+              foreach ($group as $s) { $pickMember[$s] = true; $pickSatisfied[$s] = $groupDone; }
+          }
+        ?>
         <ul class="tool-list mt-lg">
           <?php foreach (tools_in_gate($n) as $slug => $tool):
               $status = $ts[$slug] ?? 'not_started';
+              $isPick = !empty($pickMember[$slug]);
+              // A pick-one alternative the learner did not choose (the other is done).
+              $pickedOther = $isPick && $status !== 'completed' && !empty($pickSatisfied[$slug]);
               $rowClass = $status === 'completed' ? 'tool-row--done'
                         : ($status === 'in_progress' ? 'tool-row--progress' : '');
               $mark = $status === 'completed' ? '&#10003;'
@@ -87,11 +100,15 @@ require __DIR__ . '/inc/head.php';
             <div class="tool-row__main">
               <span class="tool-row__status" aria-hidden="true"><?= $mark ?></span>
               <div>
-                <div class="tool-row__name"><?= e($tool['title']) ?></div>
+                <div class="tool-row__name"><?= e($tool['title']) ?><?php if ($isPick): ?> <span class="badge badge--pick">Pick one</span><?php endif; ?></div>
                 <div class="tool-row__meta">
-                  <?= $status === 'completed' ? 'Done, still editable'
-                     : ($status === 'in_progress' ? 'In progress, pick up where you left off'
-                     : 'Not started') ?>
+                  <?php if ($pickedOther): ?>
+                    Optional, you picked the other Sparker
+                  <?php else: ?>
+                    <?= $status === 'completed' ? 'Done, still editable'
+                       : ($status === 'in_progress' ? 'In progress, pick up where you left off'
+                       : ($isPick ? 'Not started, course or digital product' : 'Not started')) ?>
+                  <?php endif; ?>
                 </div>
               </div>
             </div>

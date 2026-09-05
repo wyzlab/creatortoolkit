@@ -16,6 +16,7 @@
 .badge--locked { background: var(--track); color: var(--muted); }
 .badge--done   { background: var(--wyz-lime); color: var(--success-ink); }
 .badge--open   { background: var(--wyz-blue); color: var(--white); }
+.badge--pick   { background: var(--wyz-cyan); color: var(--white); font-size: 10px; vertical-align: middle; }
 
 /* ── Buttons ─────────────────────────────────────────────────────────── */
 .btn {

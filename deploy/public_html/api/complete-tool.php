@@ -96,10 +96,14 @@ try {
         $savedOfferId = save_offer($pdo, $uid, $answers, $resJson, $resHtml);
     }
 
-    // Unlock the PDF for this tool.
-    $pdo->prepare('INSERT INTO pdf_unlocks (user_id, tool_slug, unlocked_at)
-                   VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE unlocked_at = unlocked_at')
-        ->execute([$uid, $slug, $nowStr]);
+    // Unlock the PDF for this tool, when it has one. (A tool may ship without a
+    // PDF yet, e.g. a placeholder; then there is nothing to unlock or download.)
+    $hasPdf = !empty($reg['pdf']);
+    if ($hasPdf) {
+        $pdo->prepare('INSERT INTO pdf_unlocks (user_id, tool_slug, unlocked_at)
+                       VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE unlocked_at = unlocked_at')
+            ->execute([$uid, $slug, $nowStr]);
+    }
 
     // Update the gate counter, and close the gate if this was the last tool.
     [$done, $need] = recount_gate($pdo, $uid, $gate);
@@ -125,7 +129,7 @@ if ($gateComplete && $handover) {
 $out = [
     'ok' => true,
     'result' => ['json' => $resJson, 'html' => $resHtml],
-    'pdf_unlocked' => true,
+    'pdf_unlocked' => $hasPdf,
     'gate_complete' => $gateComplete,
 ];
 if ($savedOfferId !== null) {

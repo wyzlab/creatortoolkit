@@ -616,11 +616,9 @@ class ToolEngine {
     }
     if (r && r.gate_complete) {
       const msg = h('div', { class: 'notice notice--success' }, [
-        h('p', { text: 'You finished this gate. Your summary, your coach code, and your PDF downloads are ready.' })
+        h('p', { text: 'You finished this gate. Your summary and your PDF downloads are ready.' }),
+        h('p', { text: 'Have a question? Chat with WyzAI, the blue button in the bottom-right corner.' })
       ]);
-      if (r.coach_name) {
-        msg.appendChild(h('p', { text: 'Say hello to your ' + r.coach_name + '.' }));
-      }
       box.appendChild(msg);
       box.appendChild(h('p', {}, [
         h('a', { class: 'btn btn--cta', href: '/results/gate.php?gate=' + this.cfg.gate }, ['See your gate summary'])
