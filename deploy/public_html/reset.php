@@ -30,8 +30,11 @@ require __DIR__ . '/inc/head.php';
         <input type="hidden" name="token" value="<?= e($token) ?>">
         <div class="field">
           <label class="field__label" for="reset-pw">New password</label>
-          <input class="input" id="reset-pw" name="password" type="password"
-                 autocomplete="new-password" minlength="10" required>
+          <div class="pw-field">
+            <input class="input" id="reset-pw" name="password" type="password"
+                   autocomplete="new-password" minlength="10" required>
+            <button type="button" class="pw-toggle" data-pw-toggle aria-controls="reset-pw" aria-pressed="false" aria-label="Show password">Show</button>
+          </div>
           <span class="field__hint">At least 10 characters.</span>
         </div>
         <button class="btn btn--primary btn--block" type="submit">Save new password</button>
