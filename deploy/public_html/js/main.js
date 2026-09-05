@@ -58,6 +58,17 @@
     node.hidden = !message;
   }
 
+  // Mobile nav: toggle the account menu open/closed under the hamburger.
+  els('[data-nav-toggle]').forEach(function (btn) {
+    var navId = btn.getAttribute('aria-controls');
+    var nav = navId ? document.getElementById(navId) : null;
+    if (!nav) return;
+    btn.addEventListener('click', function () {
+      var open = nav.classList.toggle('is-open');
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  });
+
   // Wire any [data-action="logout"] button.
   els('[data-action="logout"]').forEach(function (btn) {
     btn.addEventListener('click', async function () {

@@ -299,9 +299,27 @@
 .admin-table th, .admin-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--light-gray); }
 .admin-table th { font-family: var(--font-heading); color: var(--wyz-navy); font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; }
 
+/* Long unbroken strings (emails, access codes, URLs) must never force the page
+   to scroll sideways on a phone. */
+.tool-row__name, .result-line__value, .offer-row__meta, .build-banner__name,
+.build-title__name, .coach-handover__code { overflow-wrap: anywhere; }
+
 /* ── Responsive ──────────────────────────────────────────────────────── */
 @media (min-width: 768px) {
   .legal-block__cols { grid-template-columns: 1fr 1fr; }
   .legal-block__record { grid-template-columns: 200px 1fr; align-items: baseline; }
   .legal-block__record dd { margin-bottom: var(--space-xs); }
+}
+
+/* Phones: let rows that pack a label and action(s) wrap instead of squeezing,
+   and give buttons room to sit on their own line. */
+@media (max-width: 560px) {
+  .tool-row { flex-wrap: wrap; }
+  .tool-row__main { flex: 1 1 100%; }
+  .offer-row__actions { width: 100%; justify-content: flex-start; flex-wrap: wrap; }
+  .offer-row__actions .inline-form, .offer-row__actions .btn { flex: 0 0 auto; }
+  .gate-card__head { flex-wrap: wrap; }
+  .tool-nav { flex-wrap: wrap; }
+  .tool-nav .btn { flex: 1 1 auto; }
+  .admin-result-head { flex-wrap: wrap; align-items: flex-start; }
 }
