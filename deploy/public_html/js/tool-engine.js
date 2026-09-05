@@ -149,7 +149,10 @@ class ToolEngine {
   renderShell() {
     this.root.innerHTML = '';
     this.elHead = h('div', { class: 'tool-shell__head' }, [
-      h('span', { class: 'badge badge--studio', text: 'Studio Original' }),
+      // Show which gate this tool belongs to, so the learner always knows where
+      // they are. Falls back to the brand label if a gate label is missing.
+      h('span', { class: 'badge badge--studio',
+        text: this.cfg.gateLabel ? ('Gate ' + this.cfg.gate + ': ' + this.cfg.gateLabel) : 'Studio Original' }),
       h('h1', { text: this.cfg.title }),
       this.elProgress = h('div', { class: 'progress', role: 'progressbar' }, [
         this.elProgressFill = h('div', { class: 'progress__fill' })

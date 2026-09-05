@@ -20,6 +20,7 @@ if (!$def || !$reg) { http_response_code(404); exit('Unknown tool.'); }
 $clientConfig = [
     'slug'        => $slug,
     'gate'        => (int)$def['gate'],
+    'gateLabel'   => GATES[(int)$def['gate']]['label'] ?? '',
     'title'       => $def['title'],
     'lede'        => $def['lede'] ?? '',
     'productId'   => (int)$reg['product_id'],
