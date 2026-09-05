@@ -1,8 +1,9 @@
 <?php
 /**
  * GET /api/admin/list-codes.php?status=&limit=&offset=  ->  {codes:[...], total}
- * Admin only. Never returns plaintext codes (they are not stored), only the
- * last 4, status, batch, and who they were issued to or claimed by.
+ * Admin only. Returns each code's readable value (newer codes store the full
+ * code so the admin can hand it out; older codes kept only the last 4 and stay
+ * masked), plus status, batch, and who they were issued to or claimed by.
  */
 
 declare(strict_types=1);
@@ -43,8 +44,12 @@ $stmt->execute($params);
 
 $codes = [];
 foreach ($stmt->fetchAll() as $r) {
+    // Newer codes store the full code (readable); older ones kept only the
+    // last 4, which stay masked because the rest was never stored.
+    $disp = (string)$r['code_display'];
+    $shown = (mb_strlen($disp) > 4) ? $disp : ('****-' . $disp);
     $codes[] = [
-        'display' => '****-' . $r['code_display'],
+        'display' => $shown,
         'batch' => $r['batch_label'],
         'issued_to' => $r['issued_to_email'],
         'status' => $r['status'],

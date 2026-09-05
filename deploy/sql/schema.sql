@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS access_codes (
   id                 INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   code_lookup        CHAR(64) NOT NULL UNIQUE,   -- HMAC-SHA256 of normalize(code), see Technical Spec 2.1
-  code_display       VARCHAR(20) NULL,           -- last 4 only, for the admin view
+  code_display       VARCHAR(20) NULL,           -- readable code for the admin view (older rows hold only the last 4)
   product_slug       VARCHAR(64) NOT NULL DEFAULT 'diy-creator-starter-toolkit',
   batch_label        VARCHAR(80) NULL,
   issued_to_email    VARCHAR(190) NULL,

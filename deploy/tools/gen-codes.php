@@ -82,7 +82,9 @@ while (count($made) < $count && $attempts < $count * 20) {
     $attempts++;
     $code = make_code($alphabet, $alen);
     $lookup = hash_hmac('sha256', normalize_code($code), $secrets['code_pepper']);
-    $display = substr(normalize_code($code), -4);
+    // Store the full code so it stays readable in the admin "Recent codes"
+    // table; sign-in still verifies against the HMAC in code_lookup.
+    $display = $code;
     try {
         $ins->execute([$lookup, $display, $batch, $now]);
         $made[] = $code;
