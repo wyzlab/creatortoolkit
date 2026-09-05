@@ -130,6 +130,7 @@ CREATE TABLE IF NOT EXISTS offers (
   result_html   MEDIUMTEXT NOT NULL,
   created_at    DATETIME NOT NULL,
   updated_at    DATETIME NOT NULL,
+  deleted_at    DATETIME NULL DEFAULT NULL,   -- set when trashed; NULL = live. Deleting an offer moves it here so it can be restored.
   INDEX idx_offers_user (user_id, created_at),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

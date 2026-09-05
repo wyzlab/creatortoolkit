@@ -75,6 +75,30 @@
     btn.addEventListener('click', function () { window.print(); });
   });
 
+  // Email a saved offer to the logged-in learner with one click.
+  els('[data-email-offer]').forEach(function (btn) {
+    btn.addEventListener('click', async function () {
+      var id = parseInt(btn.getAttribute('data-email-offer'), 10);
+      var notice = el('[data-email-offer-notice]');
+      var label = btn.textContent;
+      btn.disabled = true;
+      setNotice(notice, 'Sending...', null);
+      try {
+        var r = await apiPost('/api/email-offer.php', { id: id });
+        setNotice(notice, r.message || 'Done.', r.status === 'sent' ? 'success' : null);
+      } catch (e) {
+        setNotice(notice, e.message || 'Could not send just now. Please try again.', 'error');
+      } finally { btn.disabled = false; btn.textContent = label; }
+    });
+  });
+
+  // Ask before an irreversible form submit (e.g. "Delete forever").
+  els('form[data-confirm]').forEach(function (form) {
+    form.addEventListener('submit', function (ev) {
+      if (!window.confirm(form.getAttribute('data-confirm'))) { ev.preventDefault(); }
+    });
+  });
+
   // Editable build title above the gates: show plain text, reveal the input
   // only while editing, and collapse back to text after saving.
   (function () {

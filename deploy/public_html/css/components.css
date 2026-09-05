@@ -231,6 +231,11 @@
 
 .offer-actions { display: flex; flex-wrap: wrap; gap: var(--space-sm); margin-bottom: var(--space-md); }
 
+/* Trash: a collapsed list of deleted offers with Restore / Delete forever. */
+.offer-trash { border-top: 1px solid var(--line, #e5e7eb); padding-top: var(--space-md); }
+.offer-trash__summary { cursor: pointer; font-weight: 700; color: var(--wyz-navy); }
+.offer-row--trashed .tool-row__name { color: var(--muted); }
+
 .offer-print { background: var(--white); border: 1px solid var(--line, #e5e7eb); border-radius: var(--radius-md); padding: var(--space-lg); }
 .offer-print__head { border-bottom: 2px solid var(--wyz-cyan); padding-bottom: var(--space-sm); margin-bottom: var(--space-md); }
 .offer-print__brand { margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--wyz-cyan); font-weight: 700; }

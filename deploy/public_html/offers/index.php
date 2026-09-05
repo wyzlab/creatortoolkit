@@ -13,7 +13,8 @@ require_login();
 $user = current_user();
 $uid  = (int)$user['id'];
 
-$offers = list_offers(db(), $uid);
+$offers  = list_offers(db(), $uid);
+$trashed  = list_deleted_offers(db(), $uid);
 
 // Can they build an offer yet? (Gate 2 unlocked — the One-Page Offer lives there.)
 $g2 = db()->prepare('SELECT unlocked_at FROM gate_progress WHERE user_id = ? AND gate_number = 2 LIMIT 1');
@@ -57,6 +58,36 @@ require __DIR__ . '/../inc/head.php';
         </ul>
       <?php elseif ($gate2Unlocked): ?>
         <p class="mt-md">No offers yet. Click “Create a new offer” to make your first one.</p>
+      <?php endif; ?>
+
+      <?php if ($trashed): ?>
+        <details class="offer-trash mt-lg">
+          <summary class="offer-trash__summary">Deleted offers (<?= count($trashed) ?>)</summary>
+          <p class="muted mt-sm">Deleted an offer by mistake? Restore it here to print or email it again.</p>
+          <ul class="tool-list">
+            <?php foreach ($trashed as $o): ?>
+            <li class="tool-row offer-row offer-row--trashed">
+              <div class="tool-row__main">
+                <span class="tool-row__name"><?= e($o['title']) ?></span>
+                <span class="offer-row__meta">Deleted <?= e(date('M j, Y', strtotime((string)$o['deleted_at']))) ?></span>
+              </div>
+              <span class="offer-row__actions">
+                <form method="post" action="/api/restore-offer.php" class="inline-form">
+                  <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+                  <input type="hidden" name="id" value="<?= (int)$o['id'] ?>">
+                  <button type="submit" class="btn btn--sm btn--primary">Restore</button>
+                </form>
+                <form method="post" action="/api/delete-offer.php" class="inline-form" data-confirm="Delete this offer forever? This cannot be undone.">
+                  <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+                  <input type="hidden" name="id" value="<?= (int)$o['id'] ?>">
+                  <input type="hidden" name="permanent" value="1">
+                  <button type="submit" class="btn btn--sm btn--ghost">Delete forever</button>
+                </form>
+              </span>
+            </li>
+            <?php endforeach; ?>
+          </ul>
+        </details>
       <?php endif; ?>
 
       <p class="mt-lg"><a class="btn btn--ghost" href="/dashboard.php">Go to my gates</a></p>
