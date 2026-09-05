@@ -53,8 +53,11 @@ require __DIR__ . '/inc/head.php';
         <!-- Revealed after the code checks out -->
         <div class="field" data-step="password" hidden>
           <label class="field__label" for="claim-newpw">Choose a password</label>
-          <input class="input" id="claim-newpw" name="password" type="password"
-                 data-newpw autocomplete="new-password" minlength="10">
+          <div class="pw-field">
+            <input class="input" id="claim-newpw" name="password" type="password"
+                   data-newpw autocomplete="new-password" minlength="10">
+            <button type="button" class="pw-toggle" data-pw-toggle aria-controls="claim-newpw" aria-pressed="false" aria-label="Show password">Show</button>
+          </div>
           <span class="field__hint">At least 10 characters. That is the only rule.</span>
         </div>
 
@@ -71,7 +74,10 @@ require __DIR__ . '/inc/head.php';
         </div>
         <div class="field">
           <label class="field__label" for="login-pw">Password</label>
-          <input class="input" id="login-pw" name="password" type="password" autocomplete="current-password" required>
+          <div class="pw-field">
+            <input class="input" id="login-pw" name="password" type="password" autocomplete="current-password" required>
+            <button type="button" class="pw-toggle" data-pw-toggle aria-controls="login-pw" aria-pressed="false" aria-label="Show password">Show</button>
+          </div>
         </div>
         <button class="btn btn--primary btn--block" type="submit">Log in</button>
         <p class="text-center mt-lg">

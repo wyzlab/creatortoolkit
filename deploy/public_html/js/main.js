@@ -75,6 +75,20 @@
     btn.addEventListener('click', function () { window.print(); });
   });
 
+  // Show/hide password: toggle the controlled input between dots and text.
+  els('[data-pw-toggle]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var id = btn.getAttribute('aria-controls');
+      var input = id ? document.getElementById(id) : null;
+      if (!input) return;
+      var reveal = input.type === 'password';
+      input.type = reveal ? 'text' : 'password';
+      btn.textContent = reveal ? 'Hide' : 'Show';
+      btn.setAttribute('aria-pressed', reveal ? 'true' : 'false');
+      btn.setAttribute('aria-label', reveal ? 'Hide password' : 'Show password');
+    });
+  });
+
   window.Toolkit = {
     csrf: csrf,
     apiPost: apiPost,

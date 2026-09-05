@@ -44,8 +44,11 @@ require __DIR__ . '/inc/head.php';
       </div>
       <div class="field">
         <label class="field__label" for="sp-pw">Choose a password</label>
-        <input class="input" id="sp-pw" name="password" type="password"
-               autocomplete="new-password" minlength="10" required>
+        <div class="pw-field">
+          <input class="input" id="sp-pw" name="password" type="password"
+                 autocomplete="new-password" minlength="10" required>
+          <button type="button" class="pw-toggle" data-pw-toggle aria-controls="sp-pw" aria-pressed="false" aria-label="Show password">Show</button>
+        </div>
         <span class="field__hint">At least 10 characters. That is the only rule.</span>
       </div>
       <button class="btn btn--primary btn--block" type="submit">Set password and start</button>
