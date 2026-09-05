@@ -70,6 +70,11 @@
     });
   });
 
+  // Wire any [data-print] button to the browser print dialog (Save as PDF).
+  els('[data-print]').forEach(function (btn) {
+    btn.addEventListener('click', function () { window.print(); });
+  });
+
   window.Toolkit = {
     csrf: csrf,
     apiPost: apiPost,

@@ -42,6 +42,7 @@ $loggedIn  = function_exists('is_logged_in') ? is_logged_in() : false;
       <?php if ($loggedIn): ?>
         <nav class="site-header__nav" aria-label="Account">
           <a href="/dashboard.php">Dashboard</a>
+          <a href="/offers/">My Offers</a>
           <?php if (function_exists('current_user') && (current_user()['role'] ?? '') === 'admin'): ?>
             <a href="/admin/">Admin</a>
           <?php endif; ?>

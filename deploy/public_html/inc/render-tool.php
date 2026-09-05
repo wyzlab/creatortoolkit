@@ -27,6 +27,9 @@ $clientConfig = [
     'wyzaiPrompt' => $def['wyzai_prompt'] ?? '',
     'scoring'     => $def['scoring'] ?? ['type' => 'none'],
     'steps'       => $def['steps'],
+    // ?again=1 starts a blank run (carry-forward from the profile still applies),
+    // used by "create another offer" so a new offer does not reload the last one.
+    'fresh'       => !empty($_GET['again']),
 ];
 
 // Does this tool use the fee calculator? If so, deliver the fee table and the
