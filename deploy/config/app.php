@@ -12,10 +12,10 @@ return [
     'academy_line'  => 'WyzCore Academy',
     'contact_email' => 'hello@wyzcore.com',
 
-    // WyzAI floating widget. Embedded in the footer of every page.
-    // Replace AGENCY_ID once the dedicated WyzQuest agency exists (Stage B live).
+    // WyzAI floating widget (the blue chat button, bottom-right). Embedded in
+    // the footer of every page. This is the live WyzQuest agency for the toolkit.
     'wyzai_widget_src'    => 'https://agents.wyzquestpro.com/role/widget.js',
-    'wyzai_agency_id'     => 'AGENCY_ID',   // PLACEHOLDER — WyzQuest agency id
+    'wyzai_agency_id'     => 'agency-b5b9d9b09d0ecf0a',
 
     // Absolute path (above web root) to the ten source PDFs. Adjust if your
     // Hostinger layout differs. download-pdf.php is the only route to these.

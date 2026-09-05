@@ -27,8 +27,7 @@ $nonce = $GLOBALS['CSP_NONCE'] ?? '';
     </div>
   </footer>
 
-  <!-- WyzAI floating assistant. Agency id is a placeholder until the
-       dedicated WyzQuest agency exists. -->
+  <!-- WyzAI floating assistant (blue chat button, bottom-right of every page). -->
   <script
     src="<?= e(APP['wyzai_widget_src']) ?>"
     data-agency="<?= e(APP['wyzai_agency_id']) ?>"

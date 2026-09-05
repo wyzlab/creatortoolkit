@@ -202,14 +202,18 @@ function finalize_package_after_commit(PDO $pdo, int $userId): ?array
         if ($email !== '') {
             $coach = $handover['coach_name'] ?? '';
             $code  = $handover['wyzai_code'] ?? '';
-            $aiHtml = ($ai !== null && $ai !== '') ? '<p>' . nl2br(e($ai)) . '</p>' : '';
-            $aiText = ($ai !== null && $ai !== '') ? $ai . "\n\n" : '';
+            // AI notes are a future, paid feature — omitted while disabled.
+            $show   = ai_notes_enabled() && $ai !== null && $ai !== '';
+            $aiHtml = $show ? '<p>' . nl2br(e($ai)) . '</p>' : '';
+            $aiText = $show ? $ai . "\n\n" : '';
             $codeLine = ($code !== '' && strpos($code, 'PLACEHOLDER') === false)
                 ? '<p>Your <strong>' . e($coach) . '</strong> code is <strong>' . e($code) . '</strong>.</p>' : '';
+            $askHtml = '<p>Have a question? Open your toolkit and chat with <strong>WyzAI</strong> — the blue button in the bottom-right corner.</p>';
+            $askText = "Have a question? Open your toolkit and chat with WyzAI (blue button, bottom-right).\n";
             $subject = 'You finished the DIY Creator Starter Toolkit';
-            $html = $handover['summary_html'] . $aiHtml . $codeLine
+            $html = $handover['summary_html'] . $aiHtml . $codeLine . $askHtml
                   . '<p><a href="' . e(APP['app_url']) . '/results/package.php">Open your full package</a></p>';
-            $text = strip_tags($handover['summary_html']) . "\n\n" . $aiText
+            $text = strip_tags($handover['summary_html']) . "\n\n" . $aiText . $askText
                   . 'Open your full package: ' . APP['app_url'] . "/results/package.php\n";
             mail_queue('package_complete', $email, $subject, $html, $text, $userId);
         }
@@ -242,15 +246,19 @@ function queue_gate_email(PDO $pdo, int $userId, int $gate, string $summaryHtml,
     $codeLineHtml = ($code !== '' && strpos($code, 'PLACEHOLDER') === false)
         ? '<p>Your <strong>' . e($coach) . '</strong> code is <strong>' . e($code) . '</strong>.</p>' : '';
 
-    $ai = ($aiParagraph !== null) ? trim($aiParagraph) : '';
+    // AI notes are a future, paid feature — omitted while disabled.
+    $ai = (ai_notes_enabled() && $aiParagraph !== null) ? trim($aiParagraph) : '';
     $aiHtml  = $ai !== '' ? '<p>' . nl2br(e($ai)) . '</p>' : '';
     $aiText  = $ai !== '' ? $ai . "\n\n" : '';
 
+    $askHtml = '<p>Have a question? Open your toolkit and chat with <strong>WyzAI</strong> — the blue button in the bottom-right corner.</p>';
+    $askText = "Have a question? Open your toolkit and chat with WyzAI (blue button, bottom-right).\n";
+
     $subject = 'You cleared ' . $label . ' in your DIY Creator Starter Toolkit';
     $html = '<div style="font-family:Inter,Arial,sans-serif;max-width:600px">'
-          . $summaryHtml . $aiHtml . $codeLineHtml
+          . $summaryHtml . $aiHtml . $codeLineHtml . $askHtml
           . '<p><a href="' . e(APP['app_url']) . '/dashboard.php">Back to your dashboard</a></p></div>';
-    $text = strip_tags($summaryHtml) . "\n\n" . $aiText . $codeLine
+    $text = strip_tags($summaryHtml) . "\n\n" . $aiText . $codeLine . $askText
           . 'Dashboard: ' . APP['app_url'] . "/dashboard.php\n";
 
     mail_queue('gate_' . $gate . '_complete', $email, $subject, $html, $text, $userId);
