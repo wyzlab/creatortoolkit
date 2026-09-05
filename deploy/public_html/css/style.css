@@ -123,8 +123,12 @@ strong { font-weight: 700; color: var(--ink-strong); }
 }
 .wrap--narrow { max-width: var(--wrap-narrow); }
 
+/* Each screen (page) fills at least the viewport height below the sticky
+   header; longer content simply scrolls. svh tracks the real visible height on
+   mobile (accounting for the browser's address bar); vh is the fallback. */
 .site-main {
-  min-height: 60vh;
+  min-height: calc(100vh - 64px);
+  min-height: calc(100svh - 64px);
   padding-block: var(--space-lg);
 }
 
@@ -155,6 +159,22 @@ strong { font-weight: 700; color: var(--ink-strong); }
 .site-header__nav { display: flex; align-items: center; gap: var(--space-md); }
 .site-header__nav a { font-weight: 600; color: var(--dark-gray); }
 
+/* Hamburger toggle: hidden on desktop, shown on narrow screens (see breakpoint). */
+.nav-toggle {
+  display: none;
+  align-items: center; justify-content: center;
+  width: var(--tap-min); height: var(--tap-min);
+  margin-left: auto;
+  background: transparent; border: 2px solid var(--border); border-radius: var(--radius-sm);
+  color: var(--wyz-navy); cursor: pointer;
+}
+.nav-toggle__bars, .nav-toggle__bars::before, .nav-toggle__bars::after {
+  content: ''; display: block; width: 20px; height: 2px; background: currentColor; border-radius: 2px;
+}
+.nav-toggle__bars { position: relative; }
+.nav-toggle__bars::before { position: absolute; top: -6px; }
+.nav-toggle__bars::after  { position: absolute; top: 6px; }
+
 /* ── Footer ──────────────────────────────────────────────────────────── */
 .site-footer {
   background: var(--wyz-navy);
@@ -183,4 +203,29 @@ strong { font-weight: 700; color: var(--ink-strong); }
   body { font-size: 17px; }
   .site-header__title { font-size: 18px; }
   .site-main { padding-block: var(--space-xl); }
+}
+
+/* Mobile header: collapse the account nav behind a hamburger so it never
+   crowds or overflows on a phone. */
+@media (max-width: 720px) {
+  .site-header__inner { flex-wrap: wrap; }
+  .nav-toggle { display: inline-flex; }
+  .site-header__brand .badge--studio { display: none; }   /* save width on small screens */
+
+  .site-header__nav {
+    display: none;
+    flex-basis: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-xs);
+    padding: var(--space-sm) 0 var(--space-md);
+  }
+  .site-header__nav.is-open { display: flex; }
+  .site-header__nav a {
+    padding: var(--space-sm) var(--space-xs);
+    min-height: var(--tap-min); display: flex; align-items: center;
+    border-radius: var(--radius-sm);
+  }
+  .site-header__nav a:hover { background: var(--light-gray); text-decoration: none; }
+  .site-header__nav .btn { width: 100%; }
 }

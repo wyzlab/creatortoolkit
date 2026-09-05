@@ -47,7 +47,10 @@ if ($loggedIn && function_exists('current_user')) {
         <span class="site-header__title">DIY Creator Starter Toolkit</span>
       </a>
       <?php if ($loggedIn): ?>
-        <nav class="site-header__nav" aria-label="Account">
+        <button type="button" class="nav-toggle" data-nav-toggle aria-controls="site-nav" aria-expanded="false" aria-label="Menu">
+          <span class="nav-toggle__bars" aria-hidden="true"></span>
+        </button>
+        <nav class="site-header__nav" id="site-nav" aria-label="Account">
           <a href="/dashboard.php">Dashboard</a>
           <a href="/offers/">My Offers</a>
           <?php if (function_exists('current_user') && (current_user()['role'] ?? '') === 'admin'): ?>
