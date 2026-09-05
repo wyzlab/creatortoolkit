@@ -236,7 +236,7 @@ function compute_checklist_score(array $answers): array
  */
 function derive_profile(array &$profile, string $slug, array $answers): void
 {
-    if ($slug === 'content-to-course-sparker') {
+    if ($slug === 'content-to-course-sparker' || $slug === 'content-to-digital-product-sparker') {
         $mods = [];
         foreach (['module_1', 'module_2', 'module_3', 'module_4', 'module_5'] as $k) {
             if (!value_empty($answers[$k] ?? null)) { $mods[] = (string)$answers[$k]; }

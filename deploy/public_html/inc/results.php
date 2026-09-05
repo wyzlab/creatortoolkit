@@ -125,6 +125,23 @@ function build_tool_result(string $slug, array $answers, array $profile): array
             $json += ['theme' => $answers['winning_theme'] ?? '', 'modules' => count($mods)];
             break;
 
+        case 'product-spark-summary':
+            $body .= '<h2>Your digital product spark</h2>';
+            $body .= rline('Winning theme', (string)($answers['winning_theme'] ?? ''));
+            $body .= rline('After using this, my buyer can', (string)($answers['transformation'] ?? ''));
+            $parts = [];
+            foreach (['module_1', 'module_2', 'module_3', 'module_4', 'module_5'] as $k) {
+                if (trim((string)($answers[$k] ?? '')) !== '') { $parts[] = (string)$answers[$k]; }
+            }
+            if ($parts) {
+                $body .= '<div class="result-highlight"><h3>Your parts</h3><ol>';
+                foreach ($parts as $p) { $body .= '<li>' . e($p) . '</li>'; }
+                $body .= '</ol></div>';
+            }
+            $body .= rline('My verdict', (string)($answers['verdict'] ?? ''));
+            $json += ['theme' => $answers['winning_theme'] ?? '', 'parts' => count($parts)];
+            break;
+
         case 'checklist-scorecard':
             $sc = compute_checklist_score($answers);
             $band = $sc['band'];

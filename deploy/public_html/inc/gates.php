@@ -22,11 +22,19 @@ function recount_gate(PDO $pdo, int $userId, int $gate): array
     $need = GATES[$gate]['tools_required'];
     $slugs = array_keys(tools_in_gate($gate));
     $in = implode(',', array_fill(0, count($slugs), '?'));
-    $sql = "SELECT COUNT(*) FROM tool_sessions
+    $sql = "SELECT tool_slug FROM tool_sessions
              WHERE user_id = ? AND status = 'completed' AND tool_slug IN ($in)";
     $stmt = $pdo->prepare($sql);
     $stmt->execute(array_merge([$userId], $slugs));
-    $done = (int)$stmt->fetchColumn();
+    $completed = $stmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+
+    // Collapse "pick one" groups: a group with any completed tool fills one slot,
+    // and its members do not also count individually.
+    $groups  = gate_choose_one_groups($gate);
+    $grouped = gate_choose_one_slugs($gate);
+    $done = 0;
+    foreach ($completed as $s) { if (!in_array($s, $grouped, true)) { $done++; } }
+    foreach ($groups as $group) { if (array_intersect($group, $completed)) { $done++; } }
 
     $upd = $pdo->prepare(
         'UPDATE gate_progress SET tools_completed = ? WHERE user_id = ? AND gate_number = ?'

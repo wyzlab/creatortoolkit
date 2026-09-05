@@ -15,9 +15,28 @@ declare(strict_types=1);
 
 const GATES = [
     1 => ['key' => 'clarity',     'label' => 'Get Clear',           'tools_required' => 3],
-    2 => ['key' => 'creation',    'label' => 'Build Your Offer',    'tools_required' => 4],
+    // Gate 2 has 5 tool cards but 4 required slots: the two Sparkers (course and
+    // digital product) are a "pick one" pair that together count as one slot.
+    2 => ['key' => 'creation',    'label' => 'Build Your Offer',    'tools_required' => 4,
+          'choose_one' => [['content-to-course-sparker', 'content-to-digital-product-sparker']]],
     3 => ['key' => 'credibility', 'label' => 'Price, Launch, Sell', 'tools_required' => 3],
 ];
+
+/** "Pick one" groups in a gate: completing ANY tool in a group fills one slot. */
+function gate_choose_one_groups(int $gate): array
+{
+    return GATES[$gate]['choose_one'] ?? [];
+}
+
+/** Every slug that belongs to a pick-one group in a gate. */
+function gate_choose_one_slugs(int $gate): array
+{
+    $out = [];
+    foreach (gate_choose_one_groups($gate) as $group) {
+        foreach ($group as $slug) { $out[] = $slug; }
+    }
+    return $out;
+}
 
 /**
  * Order within each gate is the recommended dashboard order.
@@ -57,6 +76,14 @@ const TOOLS = [
         'title' => 'Content-to-Course Idea Sparker',
         'product_id' => 14641, 'published_on' => 'July 28, 2026', 'version' => '1.1',
         'pdf' => '05_content-to-course-sparker.pdf',
+    ],
+    // Pick-one sibling of the Course Sparker. Placeholder product id and no PDF
+    // yet (both filled in once the real digital-product resource exists).
+    'content-to-digital-product-sparker' => [
+        'gate' => 2, 'order' => 2,
+        'title' => 'Content-to-Digital-Product Sparker',
+        'product_id' => 0, 'published_on' => '', 'version' => '1.0',
+        'pdf' => '',
     ],
     'course-design-checklist' => [
         'gate' => 2, 'order' => 3,
