@@ -223,6 +223,28 @@
 .ask-wyzai h3 { margin-bottom: var(--space-xs); font-size: 15px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); }
 .ask-wyzai p { margin: 0; color: var(--ink); }
 
+/* ── My Offers ─────────────────────────────────────────────── */
+.offer-row__meta { display: block; font-size: 13px; color: var(--muted); }
+.offer-row__actions { display: inline-flex; gap: var(--space-xs); align-items: center; }
+.inline-form { display: inline; margin: 0; }
+
+.offer-actions { display: flex; flex-wrap: wrap; gap: var(--space-sm); margin-bottom: var(--space-md); }
+
+.offer-print { background: var(--white); border: 1px solid var(--line, #e5e7eb); border-radius: var(--radius-md); padding: var(--space-lg); }
+.offer-print__head { border-bottom: 2px solid var(--wyz-cyan); padding-bottom: var(--space-sm); margin-bottom: var(--space-md); }
+.offer-print__brand { margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--wyz-cyan); font-weight: 700; }
+.offer-print__title { margin: 4px 0; }
+.offer-print__date { margin: 0; font-size: 13px; color: var(--muted); }
+
+/* Print / Save as PDF: strip the site chrome so the PDF is just the offer. */
+@media print {
+  .site-header, .site-footer, .skip-link, .no-print { display: none !important; }
+  /* Best-effort: hide the floating WyzAI chat widget on the printout. */
+  [id*="wyz" i], [class*="wyz-widget" i], [class*="chat-widget" i] { display: none !important; }
+  body { background: #fff !important; }
+  .offer-print { border: none; padding: 0; }
+}
+
 /* ── Coach handover + unlocked PDFs ──────────────────────────────────── */
 .coach-handover { background: var(--wyz-navy); color: var(--white); border-radius: var(--radius-md); padding: var(--space-lg); margin: var(--space-lg) 0; }
 .coach-handover h3 { color: var(--wyz-gold); }

@@ -113,9 +113,13 @@ class ToolEngine {
     try {
       const data = await api().apiGet('/api/get-profile.php?tool_slug=' + encodeURIComponent(this.cfg.slug));
       this.state.profileVersion = data.profile_version || 1;
-      this.state.answers = data.answers || {};
+      // "Create another offer" (fresh) starts blank; carry-forward prefill still
+      // applies so the new offer keeps the learner's client and clarity work.
+      this.state.answers = this.cfg.fresh ? {} : (data.answers || {});
       this.state.prefill = data.prefill || {};
-      this.state.currentStep = Math.min(Math.max(1, data.current_step || 1), this.cfg.steps.length);
+      this.state.currentStep = this.cfg.fresh
+        ? 1
+        : Math.min(Math.max(1, data.current_step || 1), this.cfg.steps.length);
       // Seed empty answers from prefill so carried values are visible + editable.
       this.applyPrefill();
     } catch (e) {
@@ -590,6 +594,17 @@ class ToolEngine {
         h('a', { class: 'btn btn--primary', href: '/api/download-pdf.php?tool_slug=' + encodeURIComponent(this.cfg.slug) },
           ['Download the ' + this.cfg.title + ' PDF'])
       ]));
+    }
+    if (r && r.saved_offer_url) {
+      const saved = h('div', { class: 'notice notice--success' }, [
+        h('p', { text: 'Saved to My Offers. You can print it to PDF, or build another offer anytime.' })
+      ]);
+      saved.appendChild(h('p', {}, [
+        h('a', { class: 'btn btn--primary', href: r.saved_offer_url }, ['View & print this offer']),
+        h('a', { class: 'btn btn--ghost', href: '/offers/' }, ['See all my offers']),
+        h('a', { class: 'btn btn--ghost', href: '/gate2/one-page-offer.php?again=1' }, ['Create another offer'])
+      ]));
+      box.appendChild(saved);
     }
     if (r && r.gate_complete) {
       const msg = h('div', { class: 'notice notice--success' }, [

@@ -118,6 +118,22 @@ CREATE TABLE IF NOT EXISTS gate_results (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Saved One-Page Offers. Each finished offer is snapshotted here so a learner
+-- can keep several offers, print any of them to PDF, and start another. The
+-- gate journey is unaffected; this is a separate, additive history.
+CREATE TABLE IF NOT EXISTS offers (
+  id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id       INT UNSIGNED NOT NULL,
+  title         VARCHAR(190) NOT NULL,
+  answers_json  JSON NOT NULL,
+  result_json   JSON NOT NULL,
+  result_html   MEDIUMTEXT NOT NULL,
+  created_at    DATETIME NOT NULL,
+  updated_at    DATETIME NOT NULL,
+  INDEX idx_offers_user (user_id, created_at),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS pdf_unlocks (
   id                 INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   user_id            INT UNSIGNED NOT NULL,

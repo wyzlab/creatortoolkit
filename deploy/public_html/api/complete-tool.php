@@ -15,6 +15,7 @@ require_once __DIR__ . '/../inc/guard.php';
 require_once __DIR__ . '/../inc/toolengine.php';
 require_once __DIR__ . '/../inc/results.php';
 require_once __DIR__ . '/../inc/gates.php';
+require_once __DIR__ . '/../inc/offers.php';
 
 $user = api_require_login();
 $uid  = (int)$user['id'];
@@ -87,6 +88,14 @@ try {
                    VALUES (?, ?, ?, ?, ?, ?)')
         ->execute([$sid, $uid, $slug, json_encode($resJson), $resHtml, $nowStr]);
 
+    // The One-Page Offer is snapshotted into the learner's saved offers, so they
+    // can keep several, print any to PDF, and start another. Additive; does not
+    // affect the gate journey or the single canonical result above.
+    $savedOfferId = null;
+    if ($slug === 'one-page-offer') {
+        $savedOfferId = save_offer($pdo, $uid, $answers, $resJson, $resHtml);
+    }
+
     // Unlock the PDF for this tool.
     $pdo->prepare('INSERT INTO pdf_unlocks (user_id, tool_slug, unlocked_at)
                    VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE unlocked_at = unlocked_at')
@@ -119,6 +128,10 @@ $out = [
     'pdf_unlocked' => true,
     'gate_complete' => $gateComplete,
 ];
+if ($savedOfferId !== null) {
+    $out['saved_offer_id']  = $savedOfferId;
+    $out['saved_offer_url'] = '/offers/view.php?id=' . $savedOfferId;
+}
 if ($gateComplete && $handover) {
     $out['wyzai_code']         = $handover['wyzai_code'];
     $out['coach_name']         = $handover['coach_name'];
