@@ -21,8 +21,19 @@ if (process.env.CHROME_PATH) { launchOpts.executablePath = process.env.CHROME_PA
 const browser = await chromium.launch(launchOpts);
 try {
   const ctx = await browser.newContext();
+  // Keep the test hermetic: the page loads a third-party widget (WyzAI) and web
+  // fonts via parser-blocking <script>/<link> tags. If CI can't reach those
+  // hosts, the parser stalls and DOMContentLoaded never fires. Abort every
+  // non-local request so the run never depends on a third party — the app and
+  // all its own assets are served from BASE.
+  const baseHost = new URL(BASE).host;
+  await ctx.route('**/*', (route) => {
+    return (new URL(route.request().url()).host === baseHost)
+      ? route.continue()
+      : route.abort();
+  });
   const page = await ctx.newPage();
-  await page.goto(BASE + '/index.php');
+  await page.goto(BASE + '/index.php', { waitUntil: 'domcontentloaded', timeout: 60000 });
   const csrf = await page.getAttribute('meta[name=csrf-token]', 'content');
 
   // Claim an account through the API.

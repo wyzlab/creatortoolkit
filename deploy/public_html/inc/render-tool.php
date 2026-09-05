@@ -47,10 +47,26 @@ if ($needsFees) {
     $feeTable = array_values(load_fees(db()));
 }
 
+// The learner's build title (default "Offer 1"), shown atop every tool so they
+// always know which offer they are working on.
+$buildTitle = 'Offer 1';
+if (function_exists('current_user') && ($cu = current_user())) {
+    $bt = db()->prepare('SELECT profile_json FROM user_profile WHERE user_id = ? LIMIT 1');
+    $bt->execute([(int)$cu['id']]);
+    $btProfile = json_decode((string)$bt->fetchColumn() ?: '{}', true) ?: [];
+    if (trim((string)($btProfile['journey_title'] ?? '')) !== '') {
+        $buildTitle = (string)$btProfile['journey_title'];
+    }
+}
+
 $pageTitle = $def['title'];
 $pageDesc  = $def['lede'] ?? '';
 require __DIR__ . '/head.php';
 ?>
+<div class="wrap build-banner">
+  <span class="build-banner__label">This build</span>
+  <span class="build-banner__name"><?= e($buildTitle) ?></span>
+</div>
 <div class="wrap" data-tool-root data-tool-slug="<?= e($slug) ?>"></div>
 
 <script type="application/json" id="tool-config"><?= json_encode($clientConfig, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>

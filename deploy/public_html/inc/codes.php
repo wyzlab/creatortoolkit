@@ -2,8 +2,8 @@
 /**
  * codes.php — mint access codes from the web side (admin UI, purchase webhook).
  * Shares the same format and HMAC storage as tools/gen-codes.php (the CLI).
- * The plaintext code is returned to the caller ONCE and never stored; only the
- * HMAC lookup is kept.
+ * Sign-in verifies against the HMAC lookup (code_lookup); the readable code is
+ * also kept in code_display so the admin can hand it out from the console.
  */
 
 declare(strict_types=1);
@@ -44,7 +44,10 @@ function mint_codes(PDO $pdo, int $count, string $batch = 'admin', ?string $issu
         $attempts++;
         $code = make_code_string();
         $lookup = code_lookup($code);
-        $display = substr(normalize_code($code), -4);
+        // Keep the full code so the admin can always read it back in the
+        // "Recent codes" table (these are free beta access codes handed out by
+        // hand). Sign-in still verifies against the HMAC in code_lookup.
+        $display = $code;
         try {
             $ins->execute([$lookup, $display, $batch, $issuedEmail, $now]);
             $made[] = $code;
