@@ -25,8 +25,10 @@ require __DIR__ . '/../inc/head.php';
   <div class="offer-actions no-print">
     <a class="btn btn--ghost" href="/offers/">&larr; My Offers</a>
     <button type="button" class="btn btn--cta" data-print>Print / Save as PDF</button>
+    <button type="button" class="btn btn--primary" data-email-offer="<?= (int)$offer['id'] ?>">Email this to me</button>
     <a class="btn btn--ghost" href="/gate2/one-page-offer.php?again=1">Create another offer</a>
   </div>
+  <div class="notice no-print" data-email-offer-notice hidden></div>
 
   <article class="offer-print">
     <header class="offer-print__head">
