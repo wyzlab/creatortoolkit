@@ -22,7 +22,7 @@ const browser = await chromium.launch(launchOpts);
 try {
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
-  await page.goto(BASE + '/index.php');
+  await page.goto(BASE + '/index.php', { waitUntil: 'domcontentloaded', timeout: 60000 });
   const csrf = await page.getAttribute('meta[name=csrf-token]', 'content');
 
   // Claim an account through the API.
