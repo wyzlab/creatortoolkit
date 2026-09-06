@@ -35,41 +35,77 @@ error_log('WYZCORE_WEBHOOK headers=' . json_encode($headers)
     FILE_APPEND | LOCK_EX
 );
 
-$secrets = require CONFIG_DIR . '/secrets.php';
-$sigToken = (string)($secrets['wyzcore_signature_token'] ?? '');
+$secrets   = require CONFIG_DIR . '/secrets.php';
+$sigToken  = (string)($secrets['wyzcore_signature_token'] ?? '');
+$accToken  = (string)($secrets['wyzcore_access_token'] ?? '');
+$sigSet    = $sigToken !== '' && strpos($sigToken, 'REPLACE') !== 0;
+$accSet    = $accToken !== '' && strpos($accToken, 'REPLACE') !== 0;
 
-// Log-only mode until the signature token is set.
-if ($sigToken === '' || strpos($sigToken, 'REPLACE') === 0) {
-    json_out(['ok' => true, 'mode' => 'log-only, signature token not set'], 200);
-}
-
-// Verify the signature. Accept hex or base64 HMAC-SHA256 of the raw body, in
-// any of the common signature headers.
-$expectedHex = hash_hmac('sha256', $raw, $sigToken);
-$expectedB64 = base64_encode(hash_hmac('sha256', $raw, $sigToken, true));
-$verified = false;
-foreach ($headers as $name => $value) {
-    $n = strtolower($name);
-    if (strpos($n, 'sign') === false && strpos($n, 'hash') === false) {
-        continue;
-    }
-    $v = trim($value);
-    // strip a possible "sha256=" prefix
-    $v = preg_replace('/^sha256=/i', '', $v);
-    if (hash_equals($expectedHex, $v) || hash_equals($expectedB64, $v)) {
-        $verified = true;
-        break;
-    }
-}
-
-if (!$verified) {
-    error_log('WYZCORE_WEBHOOK signature did not verify');
-    // Ack so the store does not retry forever, but take no action.
-    json_out(['ok' => false, 'reason' => 'signature'], 200);
+// Log-only mode until at least one credential is set. With neither, we can't
+// tell a real wyzcore delivery from a forged one, so we only log.
+if (!$sigSet && !$accSet) {
+    json_out(['ok' => true, 'mode' => 'log-only, no wyzcore token set'], 200);
 }
 
 $payload = json_decode($raw, true);
 if (!is_array($payload)) {
+    $payload = [];
+}
+
+// A delivery is authenticated if EITHER credential proves it came from wyzcore:
+//   1. HMAC-SHA256 of the raw body matches the signature token (strongest), or
+//   2. the access token is presented verbatim (a shared bearer secret).
+// We record which path passed so the first test delivery's log is unambiguous.
+$authMethod = '';
+
+// (1) HMAC signature. Accept hex or base64, in any signature-ish header.
+if ($sigSet) {
+    $expectedHex = hash_hmac('sha256', $raw, $sigToken);
+    $expectedB64 = base64_encode(hash_hmac('sha256', $raw, $sigToken, true));
+    foreach ($headers as $name => $value) {
+        $n = strtolower($name);
+        if (strpos($n, 'sign') === false && strpos($n, 'hash') === false) {
+            continue;
+        }
+        $v = preg_replace('/^sha256=/i', '', trim($value)); // strip optional prefix
+        if (hash_equals($expectedHex, $v) || hash_equals($expectedB64, $v)) {
+            $authMethod = 'hmac';
+            break;
+        }
+    }
+}
+
+// (2) Access token. wyzcore may send it as a bearer/header or inside the body.
+// Compared constant-time against every candidate we can find.
+if ($authMethod === '' && $accSet) {
+    $candidates = [];
+    foreach ($headers as $name => $value) {
+        $n = strtolower($name);
+        if (strpos($n, 'auth') !== false || strpos($n, 'token') !== false
+            || strpos($n, 'api-key') !== false || strpos($n, 'apikey') !== false
+            || strpos($n, 'secret') !== false) {
+            $candidates[] = preg_replace('/^bearer\s+/i', '', trim($value));
+        }
+    }
+    foreach (['access_token', 'token', 'api_key', 'apikey', 'secret', 'key'] as $k) {
+        if (!empty($payload[$k]) && is_string($payload[$k])) { $candidates[] = trim($payload[$k]); }
+    }
+    foreach ($candidates as $cand) {
+        if ($cand !== '' && hash_equals($accToken, $cand)) {
+            $authMethod = 'access-token';
+            break;
+        }
+    }
+}
+
+if ($authMethod === '') {
+    error_log('WYZCORE_WEBHOOK not authenticated (no matching signature or access token)');
+    // Ack so the store does not retry forever, but take no action.
+    json_out(['ok' => false, 'reason' => 'unauthenticated'], 200);
+}
+error_log('WYZCORE_WEBHOOK authenticated via ' . $authMethod);
+
+if (!$payload) {
     json_out(['ok' => false, 'reason' => 'bad json'], 200);
 }
 
@@ -103,7 +139,7 @@ try {
     json_out(['ok' => false, 'reason' => 'server'], 200);
 }
 
-json_out(['ok' => true, 'event' => $event, 'action' => $action], 200);
+json_out(['ok' => true, 'event' => $event, 'action' => $action, 'auth' => $authMethod], 200);
 
 
 /** All request headers, name => value. */
