@@ -12,6 +12,16 @@ return [
     'academy_line'  => 'WyzCore Academy',
     'contact_email' => 'hello@wyzcore.com',
 
+    // wyzcore.com sells many products; the purchase webhook grants toolkit
+    // access ONLY when the purchased item's title contains one of these
+    // (case-insensitive) phrases. Set these to match how the toolkit product is
+    // named in your wyzcore store, so buyers of OTHER products never get access.
+    'toolkit_product_match' => [
+        'diy creator',
+        'creator starter toolkit',
+        'diy-creator-starter-toolkit',
+    ],
+
     // WyzAI floating widget (the blue chat button, bottom-right). Embedded in
     // the footer of every page. This is the live WyzQuest agency for the toolkit.
     'wyzai_widget_src'    => 'https://agents.wyzquestpro.com/role/widget.js',

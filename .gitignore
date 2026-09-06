@@ -19,3 +19,6 @@ node_modules/
 
 # Bundle PHPMailer so email works without a server-side install
 !deploy/vendor/
+
+# Runtime webhook payload log (written by wyzcore-webhook.php; may contain buyer data)
+deploy/private/webhook-log.txt
