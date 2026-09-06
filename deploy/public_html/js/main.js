@@ -81,6 +81,23 @@
     });
   });
 
+  // Post-checkout thank-you page: claim access resends the set-password link.
+  els('form[data-form="claim-access"]').forEach(function (form) {
+    form.addEventListener('submit', async function (ev) {
+      ev.preventDefault();
+      var notice = el('[data-claim-notice]');
+      var btn = form.querySelector('button[type="submit"]');
+      if (btn) btn.disabled = true;
+      setNotice(notice, 'Sending...', null);
+      try {
+        var r = await apiPost('/api/claim-access.php', { email: form.email.value.trim() });
+        setNotice(notice, (r && r.message) || 'Check your email for your set-up link.', 'success');
+      } catch (e) {
+        setNotice(notice, e.message || 'Something went wrong. Please try again.', 'error');
+      } finally { if (btn) btn.disabled = false; }
+    });
+  });
+
   // Wire any [data-print] button to the browser print dialog (Save as PDF).
   els('[data-print]').forEach(function (btn) {
     btn.addEventListener('click', function () { window.print(); });

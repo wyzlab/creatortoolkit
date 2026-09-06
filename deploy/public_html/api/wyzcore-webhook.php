@@ -81,6 +81,14 @@ if ($email === '' || !is_email($email)) {
     json_out(['ok' => false, 'reason' => 'no email'], 200);
 }
 
+// wyzcore sells many products. Only this sale's TOOLKIT line grants access;
+// a sale of any other product is acknowledged and ignored.
+$products = find_products($payload);
+if (!purchase_is_toolkit($products)) {
+    error_log('WYZCORE_WEBHOOK ignored: product not the toolkit. products=' . json_encode($products));
+    json_out(['ok' => true, 'action' => 'ignored', 'reason' => 'not the toolkit product'], 200);
+}
+
 try {
     if (strpos($event, 'cancel') !== false) {
         suspend_access(db(), $email);
@@ -138,4 +146,56 @@ function find_event(array $p): string
     }
     if (isset($p['data']) && is_array($p['data'])) { return find_event($p['data']); }
     return '';
+}
+
+/**
+ * Collect every product/item title in the payload, trying common shapes:
+ * a top-level product name, and arrays of line items each with a title/name.
+ * Recurses into wrapper groups (data/order/...). Returns a flat list of titles.
+ */
+function find_products(array $p): array
+{
+    $titles = [];
+    $titleKeys = ['product', 'product_name', 'product_title', 'item', 'item_name',
+                  'item_title', 'title', 'name', 'plan', 'plan_name', 'offer', 'offer_name'];
+    foreach ($titleKeys as $k) {
+        if (!empty($p[$k]) && is_string($p[$k])) { $titles[] = $p[$k]; }
+    }
+    // Arrays of line items.
+    foreach (['line_items', 'items', 'products', 'order_items', 'lines', 'cart'] as $k) {
+        if (!empty($p[$k]) && is_array($p[$k])) {
+            foreach ($p[$k] as $item) {
+                if (is_string($item)) { $titles[] = $item; }
+                elseif (is_array($item)) { $titles = array_merge($titles, find_products($item)); }
+            }
+        }
+    }
+    // Recurse into common wrapper objects.
+    foreach (['data', 'order', 'sale', 'purchase', 'subscription', 'checkout'] as $group) {
+        if (isset($p[$group]) && is_array($p[$group])) {
+            $titles = array_merge($titles, find_products($p[$group]));
+        }
+    }
+    return array_values(array_unique(array_filter($titles, 'is_string')));
+}
+
+/**
+ * Does any product title identify the DIY Creator Toolkit? Matches (case
+ * insensitive) against the configured phrases and the product slug.
+ * If the payload carried NO product titles at all, we do NOT assume it is the
+ * toolkit — better to ignore an unrecognised sale than to grant wrongly.
+ */
+function purchase_is_toolkit(array $titles): bool
+{
+    if (!$titles) { return false; }
+    $needles = APP['toolkit_product_match'] ?? [];
+    $needles[] = 'diy-creator-starter-toolkit';
+    foreach ($titles as $t) {
+        $hay = mb_strtolower((string)$t);
+        foreach ($needles as $needle) {
+            $needle = mb_strtolower(trim((string)$needle));
+            if ($needle !== '' && strpos($hay, $needle) !== false) { return true; }
+        }
+    }
+    return false;
 }
