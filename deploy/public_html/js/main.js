@@ -81,22 +81,58 @@
     });
   });
 
-  // Post-checkout thank-you page: claim access resends the set-password link.
-  els('form[data-form="claim-access"]').forEach(function (form) {
-    form.addEventListener('submit', async function (ev) {
+  // Post-checkout thank-you page: a real buyer confirms their email, then sets
+  // a password right here and is taken straight into the toolkit (no email).
+  (function () {
+    var root = el('[data-claim]');
+    if (!root) return;
+    var notice   = el('[data-claim-notice]', root);
+    var stepEmail = el('[data-claim-step="email"]', root);
+    var stepPw    = el('[data-claim-step="password"]', root);
+    var checkForm = el('form[data-form="claim-check"]', root);
+    var pwForm    = el('form[data-form="claim-set-password"]', root);
+
+    if (checkForm) checkForm.addEventListener('submit', async function (ev) {
       ev.preventDefault();
-      var notice = el('[data-claim-notice]');
-      var btn = form.querySelector('button[type="submit"]');
+      var btn = checkForm.querySelector('button[type="submit"]');
       if (btn) btn.disabled = true;
-      setNotice(notice, 'Sending...', null);
+      setNotice(notice, 'Checking your purchase...', null);
       try {
-        var r = await apiPost('/api/claim-access.php', { email: form.email.value.trim() });
-        setNotice(notice, (r && r.message) || 'Check your email for your set-up link.', 'success');
+        var r = await apiPost('/api/claim-check.php', { email: checkForm.email.value.trim() });
+        if (r && r.ready) {
+          setNotice(notice, '');
+          var nameEl = el('[data-claim-email]', root);
+          if (nameEl) nameEl.textContent = r.email || checkForm.email.value.trim();
+          if (stepEmail) stepEmail.hidden = true;
+          if (stepPw) stepPw.hidden = false;
+          var pw = el('#claim-newpw', root); if (pw) pw.focus();
+        } else {
+          setNotice(notice, (r && r.message) || 'We could not find your purchase yet.', r && r.already ? null : 'error');
+        }
       } catch (e) {
         setNotice(notice, e.message || 'Something went wrong. Please try again.', 'error');
       } finally { if (btn) btn.disabled = false; }
     });
-  });
+
+    if (pwForm) pwForm.addEventListener('submit', async function (ev) {
+      ev.preventDefault();
+      var btn = pwForm.querySelector('button[type="submit"]');
+      if (btn) btn.disabled = true;
+      setNotice(notice, 'Setting up your toolkit...', null);
+      try {
+        var r = await apiPost('/api/claim-set-password.php', { password: pwForm.password.value });
+        window.location.href = (r && r.redirect) || '/dashboard.php';
+      } catch (e) {
+        if (btn) btn.disabled = false;
+        // Session expired mid-claim: send them back to step 1.
+        if (e.status === 440) {
+          if (stepPw) stepPw.hidden = true;
+          if (stepEmail) stepEmail.hidden = false;
+        }
+        setNotice(notice, e.message || 'Something went wrong. Please try again.', 'error');
+      }
+    });
+  })();
 
   // Wire any [data-print] button to the browser print dialog (Save as PDF).
   els('[data-print]').forEach(function (btn) {
