@@ -43,7 +43,8 @@ require __DIR__ . '/csrf.php';
 require __DIR__ . '/ratelimit.php';
 
 // ── Hardened session ─────────────────────────────────────────────────────
-if (session_status() !== PHP_SESSION_ACTIVE) {
+// CLI (cron scripts) never need a session; starting one there only warns.
+if (PHP_SAPI !== 'cli' && session_status() !== PHP_SESSION_ACTIVE) {
     $idleDays = (int)($APP['session_idle_days'] ?? 30);
     $lifetime = $idleDays * 24 * 60 * 60;
     ini_set('session.gc_maxlifetime', (string)$lifetime);
