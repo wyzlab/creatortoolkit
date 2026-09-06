@@ -42,6 +42,8 @@
 .btn--ghost { background: transparent; color: var(--wyz-blue); border-color: var(--wyz-blue); }
 .btn--ghost:hover { background: var(--wyz-blue); color: var(--white); }
 
+.btn--danger { background: transparent; color: var(--wyz-orange); border-color: var(--wyz-orange); }
+.btn--danger:hover { background: var(--wyz-orange); color: var(--white); }
 .btn--block { width: 100%; }
 .btn--sm { min-height: 38px; padding: 8px 16px; font-size: 14px; }
 .btn--lg { min-height: 56px; padding: 16px 36px; font-size: 18px; }
@@ -302,6 +304,10 @@
 /* Universal code uses, one block per specific code (kept apart across rotations). */
 .uni-code { padding: var(--space-md) 0; border-top: 1px solid var(--light-gray); }
 .uni-code:first-child { border-top: 0; padding-top: 0; }
+.access-cell { white-space: nowrap; }
+.access-cell .btn { margin-left: var(--space-xs); }
+.access-tag { font-size: 12px; font-weight: 700; color: var(--success-ink); }
+.access-tag--off { color: var(--wyz-orange); }
 
 /* Long unbroken strings (emails, access codes, URLs) must never force the page
    to scroll sideways on a phone. */

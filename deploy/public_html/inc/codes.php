@@ -145,8 +145,10 @@ function universal_codes_with_uses(PDO $pdo): array
 
     $tracked = code_redemptions_supported($pdo);
     $redStmt = $tracked
-        ? $pdo->prepare("SELECT email, redeemed_at FROM code_redemptions
-                          WHERE code_id = ? ORDER BY redeemed_at DESC, id DESC")
+        ? $pdo->prepare("SELECT cr.user_id, cr.email, cr.redeemed_at, u.status
+                           FROM code_redemptions cr
+                           LEFT JOIN users u ON u.id = cr.user_id
+                          WHERE cr.code_id = ? ORDER BY cr.redeemed_at DESC, cr.id DESC")
         : null;
 
     $out = [];
@@ -155,7 +157,13 @@ function universal_codes_with_uses(PDO $pdo): array
         if ($redStmt) {
             $redStmt->execute([(int)$c['id']]);
             $uses = array_map(
-                fn($r) => ['email' => $r['email'], 'redeemed_at' => $r['redeemed_at']],
+                fn($r) => [
+                    'user_id'     => (int)$r['user_id'],
+                    'email'       => $r['email'],
+                    'redeemed_at' => $r['redeemed_at'],
+                    // 'active' or 'suspended' (revoked); null if the user is gone.
+                    'status'      => $r['status'] ?? 'gone',
+                ],
                 $redStmt->fetchAll()
             );
         }

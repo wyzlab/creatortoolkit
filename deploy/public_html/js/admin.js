@@ -79,6 +79,45 @@
       .catch(function () { btn.textContent = 'Copy failed'; });
     setTimeout(function () { btn.textContent = label; }, 1500);
   }
+  // One sign-up row with its current access state and a revoke/restore button.
+  function accessRow(u) {
+    var cell;
+    if (u.status === 'gone') {
+      cell = '<span class="muted">removed</span>';
+    } else {
+      var revoked = u.status === 'suspended';
+      var label = revoked ? '<span class="access-tag access-tag--off">Revoked</span>' : '<span class="access-tag">Active</span>';
+      var btn = '<button type="button" class="btn btn--sm ' + (revoked ? 'btn--ghost' : 'btn--danger') +
+        '" data-set-access data-user-id="' + u.user_id + '" data-action="' + (revoked ? 'restore' : 'revoke') + '">' +
+        (revoked ? 'Restore' : 'Revoke') + '</button>';
+      cell = label + ' ' + btn;
+    }
+    return '<tr data-uid="' + u.user_id + '"><td>' + esc(u.email) + '</td><td>' + esc(u.redeemed_at) + '</td><td class="access-cell">' + cell + '</td></tr>';
+  }
+  // Revoke/restore a sign-up's access (event-delegated, one listener for all groups).
+  var usesHostForClicks = T.el('[data-universal-uses-groups]', root);
+  if (usesHostForClicks) {
+    usesHostForClicks.addEventListener('click', async function (ev) {
+      var btn = ev.target.closest ? ev.target.closest('[data-set-access]') : null;
+      if (!btn) return;
+      var uid = btn.getAttribute('data-user-id');
+      var action = btn.getAttribute('data-action');
+      if (action === 'revoke' && !window.confirm('Revoke access for this account? They will be signed out and cannot log in until you restore them.')) return;
+      btn.disabled = true;
+      try {
+        var r = await T.apiPost('/api/admin/set-access.php', { user_id: parseInt(uid, 10), action: action });
+        var cell = btn.closest('.access-cell');
+        var nowRevoked = r.status === 'suspended';
+        cell.innerHTML = (nowRevoked ? '<span class="access-tag access-tag--off">Revoked</span>' : '<span class="access-tag">Active</span>') +
+          ' <button type="button" class="btn btn--sm ' + (nowRevoked ? 'btn--ghost' : 'btn--danger') +
+          '" data-set-access data-user-id="' + uid + '" data-action="' + (nowRevoked ? 'restore' : 'revoke') + '">' +
+          (nowRevoked ? 'Restore' : 'Revoke') + '</button>';
+      } catch (e) {
+        btn.disabled = false;
+        alert(e.message || 'Could not update access. Please try again.');
+      }
+    });
+  }
   async function loadUniversalUses() {
     var host = T.el('[data-universal-uses-groups]', root);
     var note = T.el('[data-universal-uses-note]', root);
@@ -110,8 +149,8 @@
 
         if (g.uses.length) {
           var sx = document.createElement('div'); sx.className = 'scroll-x';
-          sx.innerHTML = '<table class="admin-table"><thead><tr><th>Email</th><th>Date used</th></tr></thead><tbody>' +
-            g.uses.map(function (u) { return '<tr><td>' + esc(u.email) + '</td><td>' + esc(u.redeemed_at) + '</td></tr>'; }).join('') +
+          sx.innerHTML = '<table class="admin-table"><thead><tr><th>Email</th><th>Date used</th><th>Access</th></tr></thead><tbody>' +
+            g.uses.map(function (u) { return accessRow(u); }).join('') +
             '</tbody></table>';
           wrap.appendChild(sx);
         } else {
