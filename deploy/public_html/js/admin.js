@@ -338,7 +338,51 @@
       } finally { btn.disabled = false; }
     });
 
+    // Recent webhook deliveries (parsed verdict per delivery).
+    var logHost = T.el('[data-webhook-log]', root);
+    function renderDeliveries(r) {
+      if (!logHost) return;
+      if (!r.log_present || !r.entries.length) {
+        logHost.innerHTML = '<p class="muted">No deliveries recorded yet. In WyzCore, click “send test data”, then Refresh.</p>';
+        return;
+      }
+      logHost.innerHTML = r.entries.map(function (e) {
+        var verdict, kind;
+        if (!e.parsed) { verdict = 'Body was not JSON — could not read it'; kind = 'error'; }
+        else if (!e.email) { verdict = 'No email found in the payload'; kind = 'error'; }
+        else if (!e.is_toolkit) { verdict = 'Not recognised as the toolkit — would be ignored'; kind = 'warn'; }
+        else { verdict = 'Toolkit sale for ' + esc(e.email) + ' — would grant access'; kind = 'ok'; }
+        var tag = '<span class="access-tag' + (kind === 'ok' ? '' : ' access-tag--off') + '">' +
+          (kind === 'ok' ? 'OK' : (kind === 'warn' ? 'IGNORED' : 'PROBLEM')) + '</span>';
+        var meta = [];
+        if (e.event) meta.push('event: ' + esc(e.event));
+        if (e.email) meta.push('email: ' + esc(e.email));
+        if (e.product_ids && e.product_ids.length) meta.push('product id: ' + esc(e.product_ids.join(', ')));
+        if (e.products && e.products.length) meta.push('product: ' + esc(e.products.join(', ')));
+        if (e.auth_headers && e.auth_headers.length) meta.push('signed headers: ' + esc(e.auth_headers.join(', ')));
+        return '<div class="uni-code">' +
+          '<div class="admin-result-head"><strong>' + tag + ' ' + esc(e.time) + '</strong></div>' +
+          '<p class="muted" style="margin:.25rem 0">' + esc(verdict) + '</p>' +
+          (meta.length ? '<p class="muted" style="margin:.25rem 0">' + meta.join(' · ') + '</p>' : '') +
+          '<details><summary class="muted">Raw payload</summary><pre class="scroll-x" style="white-space:pre-wrap;font-size:.8rem">' + esc(e.body) + '</pre></details>' +
+          '</div>';
+      }).join('');
+    }
+    async function loadDeliveries() {
+      if (!logHost) return;
+      try { renderDeliveries(await T.apiGet('/api/admin/webhook-log.php?limit=10')); }
+      catch (e) { logHost.innerHTML = '<p class="notice notice--error">Could not load deliveries.</p>'; }
+    }
+    var refreshBtn = T.el('[data-webhook-refresh]', root);
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', function () {
+        logHost.innerHTML = '<p class="muted">Loading&hellip;</p>';
+        loadDeliveries();
+      });
+    }
+
     loadIntegrations();
+    loadDeliveries();
   }
 
   // ── Copy buttons ─────────────────────────────────────────────────────
