@@ -147,6 +147,36 @@
         }
         wrap.appendChild(head);
 
+        // Slot cap: editable "how many sign-ups this code allows" (webinar seats).
+        if (r.slots && g.status !== 'revoked') {
+          var slotWrap = document.createElement('div');
+          slotWrap.className = 'uni-slots';
+          function slotState(gg) {
+            if (gg.max_uses == null) return gg.count + ' used · unlimited';
+            return gg.count + ' / ' + gg.max_uses + ' slots used' + (gg.full ? ' — FULL, rotate the code' : '');
+          }
+          slotWrap.innerHTML =
+            '<label class="uni-slots__label">Seat limit</label>' +
+            '<input type="number" min="1" class="input uni-slots__input" placeholder="unlimited" value="' + (g.max_uses == null ? '' : g.max_uses) + '">' +
+            '<button type="button" class="btn btn--sm btn--primary" data-save-cap>Save</button>' +
+            '<span class="uni-slots__state ' + (g.full ? 'uni-slots__state--full' : 'muted') + '">' + esc(slotState(g)) + '</span>';
+          var capInput = slotWrap.querySelector('.uni-slots__input');
+          var capBtn   = slotWrap.querySelector('[data-save-cap]');
+          var capState = slotWrap.querySelector('.uni-slots__state');
+          capBtn.addEventListener('click', async function () {
+            capBtn.disabled = true;
+            try {
+              var res = await T.apiPost('/api/admin/set-universal-cap.php', { code_id: g.code_id, max_uses: capInput.value.trim() });
+              g.max_uses = res.max_uses; g.full = res.full;
+              capState.textContent = slotState(g);
+              capState.className = 'uni-slots__state ' + (g.full ? 'uni-slots__state--full' : 'muted');
+            } catch (e) {
+              alert(e.message || 'Could not save the seat limit.');
+            } finally { capBtn.disabled = false; }
+          });
+          wrap.appendChild(slotWrap);
+        }
+
         if (g.uses.length) {
           var sx = document.createElement('div'); sx.className = 'scroll-x';
           sx.innerHTML = '<table class="admin-table"><thead><tr><th>Email</th><th>Date used</th><th>Access</th></tr></thead><tbody>' +

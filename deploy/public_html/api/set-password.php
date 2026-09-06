@@ -36,12 +36,14 @@ if (strlen($password) < 10) {
 $pdo = db();
 $lookup = code_lookup($code);
 
+$universalJustFilled = null;   // set if this sign-up fills a capped universal code
+
 try {
     $pdo->beginTransaction();
 
     // Lock the code row and confirm it is still claimable.
     $sel = $pdo->prepare(
-        'SELECT id, status, expires_at, batch_label FROM access_codes WHERE code_lookup = ? FOR UPDATE'
+        'SELECT id, status, expires_at, batch_label, code_display FROM access_codes WHERE code_lookup = ? FOR UPDATE'
     );
     $sel->execute([$lookup]);
     $codeRow = $sel->fetch();
@@ -55,6 +57,27 @@ try {
         || ($codeRow['expires_at'] !== null && $codeRow['expires_at'] < now_dt())) {
         $pdo->rollBack();
         fail('That code is no longer available. Please check it, or log in if you already set up your toolkit.', 409);
+    }
+
+    // Universal code slot cap: refuse once the code is full. Counting under the
+    // FOR UPDATE lock on this code row makes concurrent claims safe. max_uses is
+    // read separately so this still works before the migration adds the column.
+    if ($isUniversal && access_codes_slots_supported($pdo)) {
+        $mx = $pdo->prepare('SELECT max_uses FROM access_codes WHERE id = ? LIMIT 1');
+        $mx->execute([(int)$codeRow['id']]);
+        $capMax = $mx->fetchColumn();
+        if (!empty($capMax)) {
+            $capMax  = (int)$capMax;
+            $usedNow = code_use_count($pdo, (int)$codeRow['id']);
+            if ($usedNow >= $capMax) {
+                $pdo->rollBack();
+                fail('This code has reached its limit. Please ask the host for a new code.', 409);
+            }
+            // Does THIS sign-up fill the last slot? (notify admins after commit)
+            if ($usedNow + 1 >= $capMax) {
+                $universalJustFilled = ['code' => (string)$codeRow['code_display'], 'used' => $capMax];
+            }
+        }
     }
 
     // Email must be free.
@@ -129,6 +152,11 @@ $subject = 'Welcome to your DIY Creator Starter Toolkit';
 $html = welcome_email_html($coach, $wcode);
 $text = welcome_email_text($coach, $wcode);
 mail_queue('welcome', $email, $subject, $html, $text, $userId);
+
+// If this sign-up filled a capped universal code, tell the admins to rotate it.
+if ($universalJustFilled !== null) {
+    notify_admins_universal_full($pdo, $universalJustFilled['code'], (int)$universalJustFilled['used']);
+}
 
 // Log them straight in.
 session_regenerate_id(true);

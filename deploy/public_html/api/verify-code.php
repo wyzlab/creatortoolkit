@@ -9,6 +9,7 @@
 
 declare(strict_types=1);
 require_once __DIR__ . '/../inc/bootstrap.php';
+require_once __DIR__ . '/../inc/codes.php';
 
 require_post();
 csrf_check();
@@ -29,7 +30,7 @@ if (!is_email($email) || $code === '') {
 
 $lookup = code_lookup($code);
 $stmt = db()->prepare(
-    'SELECT id, status, expires_at FROM access_codes WHERE code_lookup = ? LIMIT 1'
+    'SELECT id, status, expires_at, batch_label FROM access_codes WHERE code_lookup = ? LIMIT 1'
 );
 $stmt->execute([$lookup]);
 $row = $stmt->fetch();
@@ -42,6 +43,17 @@ if (in_array($row['status'], ['revoked', 'expired'], true)) {
 }
 if ($row['expires_at'] !== null && $row['expires_at'] < now_dt()) {
     $invalid();
+}
+
+// A capped universal code that is full: say so, rather than a generic invalid.
+if ($row['batch_label'] === '__universal__' && access_codes_slots_supported(db())) {
+    $mx = db()->prepare('SELECT max_uses FROM access_codes WHERE id = ? LIMIT 1');
+    $mx->execute([(int)$row['id']]);
+    $cap = $mx->fetchColumn();
+    if (!empty($cap) && code_use_count(db(), (int)$row['id']) >= (int)$cap) {
+        json_out(['valid' => false, 'needs_password' => false,
+            'error' => 'This code has reached its limit. Please ask the host for a new code.'], 200);
+    }
 }
 
 // If this email already has an account, they should log in, not claim.

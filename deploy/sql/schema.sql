@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS access_codes (
   claimed_at         DATETIME NULL,
   expires_at         DATETIME NULL,
   status             ENUM('unclaimed','claimed','revoked','expired') NOT NULL DEFAULT 'unclaimed',
+  max_uses           INT UNSIGNED NULL,          -- slot cap for a shared universal code (NULL = unlimited)
   created_at         DATETIME NOT NULL,
   INDEX idx_ac_status (status),
   FOREIGN KEY (claimed_by_user_id) REFERENCES users(id) ON DELETE SET NULL
