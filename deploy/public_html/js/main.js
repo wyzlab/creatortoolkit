@@ -81,38 +81,69 @@
     });
   });
 
-  // Post-checkout thank-you page: a real buyer confirms their email, then sets
-  // a password right here and is taken straight into the toolkit (no email).
+  // Post-checkout thank-you page: a real buyer sets a password right here and is
+  // taken straight into the toolkit (no email). If the checkout redirect carried
+  // ?email=..., we claim automatically; otherwise they type the email once.
   (function () {
     var root = el('[data-claim]');
     if (!root) return;
     var notice   = el('[data-claim-notice]', root);
     var stepEmail = el('[data-claim-step="email"]', root);
     var stepPw    = el('[data-claim-step="password"]', root);
+    var stepNobuy = el('[data-claim-step="nobuy"]', root);
     var checkForm = el('form[data-form="claim-check"]', root);
     var pwForm    = el('form[data-form="claim-set-password"]', root);
+
+    function show(which) {
+      if (stepEmail) stepEmail.hidden = which !== 'email';
+      if (stepPw) stepPw.hidden = which !== 'password';
+      if (stepNobuy) stepNobuy.hidden = which !== 'nobuy';
+    }
+
+    async function runCheck(email) {
+      setNotice(notice, 'Checking your purchase...', null);
+      var r = await apiPost('/api/claim-check.php', { email: email });
+      if (r && r.ready) {
+        setNotice(notice, '');
+        var nameEl = el('[data-claim-email]', root);
+        if (nameEl) nameEl.textContent = r.email || email;
+        show('password');
+        var pw = el('#claim-newpw', root); if (pw) pw.focus();
+      } else if (r && r.already) {
+        show('email');
+        setNotice(notice, r.message || 'You already set your password. Please log in.', null);
+      } else {
+        // No matching purchase — invite them to buy (or try another email).
+        show('nobuy');
+        setNotice(notice, '');
+      }
+    }
 
     if (checkForm) checkForm.addEventListener('submit', async function (ev) {
       ev.preventDefault();
       var btn = checkForm.querySelector('button[type="submit"]');
       if (btn) btn.disabled = true;
-      setNotice(notice, 'Checking your purchase...', null);
-      try {
-        var r = await apiPost('/api/claim-check.php', { email: checkForm.email.value.trim() });
-        if (r && r.ready) {
-          setNotice(notice, '');
-          var nameEl = el('[data-claim-email]', root);
-          if (nameEl) nameEl.textContent = r.email || checkForm.email.value.trim();
-          if (stepEmail) stepEmail.hidden = true;
-          if (stepPw) stepPw.hidden = false;
-          var pw = el('#claim-newpw', root); if (pw) pw.focus();
-        } else {
-          setNotice(notice, (r && r.message) || 'We could not find your purchase yet.', r && r.already ? null : 'error');
-        }
-      } catch (e) {
-        setNotice(notice, e.message || 'Something went wrong. Please try again.', 'error');
-      } finally { if (btn) btn.disabled = false; }
+      try { await runCheck(checkForm.email.value.trim()); }
+      catch (e) { setNotice(notice, e.message || 'Something went wrong. Please try again.', 'error'); }
+      finally { if (btn) btn.disabled = false; }
     });
+
+    // "Try another email" from the no-purchase step.
+    var retry = el('[data-claim-retry]', root);
+    if (retry) retry.addEventListener('click', function () {
+      setNotice(notice, '');
+      show('email');
+      var em = el('#claim-email', root); if (em) { em.value = ''; em.focus(); }
+    });
+
+    // Auto-claim when the checkout redirect carried the buyer's email.
+    var autoEmail = root.getAttribute('data-claim-auto');
+    if (autoEmail) {
+      runCheck(autoEmail).catch(function (e) {
+        setNotice(notice, e.message || 'Something went wrong. Please enter your email.', 'error');
+        show('email');
+      });
+    }
 
     if (pwForm) pwForm.addEventListener('submit', async function (ev) {
       ev.preventDefault();

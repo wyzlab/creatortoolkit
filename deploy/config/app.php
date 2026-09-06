@@ -12,6 +12,11 @@ return [
     'academy_line'  => 'WyzCore Academy',
     'contact_email' => 'hello@wyzcore.com',
 
+    // Where to send someone who reaches the claim/thank-you page without a
+    // matching purchase (so we can invite them to buy). Set this to your
+    // wyzcore checkout link for the toolkit. Empty = show a plain message only.
+    'purchase_url'  => '',
+
     // wyzcore.com sells many products; the purchase webhook grants toolkit
     // access ONLY when the purchased item's title contains one of these
     // (case-insensitive) phrases. Set these to match how the toolkit product is
