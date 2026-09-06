@@ -13,6 +13,7 @@ require_once __DIR__ . '/../inc/bootstrap.php';
 require_once __DIR__ . '/../inc/tools.php';
 require_once __DIR__ . '/../inc/wyzai.php';
 require_once __DIR__ . '/../inc/mailer.php';
+require_once __DIR__ . '/../inc/codes.php';
 
 require_post();
 csrf_check();
@@ -107,6 +108,10 @@ try {
 
     // 5. Claim the Welcome Buddy code (trigger 'login'). Idempotent.
     $welcome = wyzai_claim($pdo, $userId, 'login');
+
+    // 6. Record this code use, so a shared universal code accrues one row per
+    //    sign-up and the admin can reconcile the emails against purchases.
+    record_redemption($pdo, (int)$codeRow['id'], $userId, $email, $codeRow['batch_label'] ?? null);
 
     $pdo->commit();
 } catch (\Throwable $ex) {

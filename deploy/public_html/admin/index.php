@@ -63,6 +63,23 @@ require __DIR__ . '/../inc/head.php';
     </div>
   </section>
 
+  <!-- Universal code uses (reconcile against purchases) -->
+  <section class="card admin-section">
+    <h2>Universal code uses</h2>
+    <p class="muted">Every sign-up that used the shared universal code, with the email and date. Use this to match uses against your actual purchases. (Tracking starts from when this was added; sign-ups before that are not listed here.)</p>
+    <div class="admin-result-head">
+      <strong data-universal-uses-count>Loading&hellip;</strong>
+      <button class="btn btn--sm btn--ghost" type="button" data-copy-uses hidden>Copy as CSV</button>
+    </div>
+    <div class="notice" data-universal-uses-note hidden></div>
+    <div class="scroll-x">
+      <table class="admin-table" data-universal-uses hidden>
+        <thead><tr><th>Email</th><th>Date used</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
   <!-- Generate a batch of codes -->
   <section class="card admin-section">
     <h2>Create access codes</h2>

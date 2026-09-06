@@ -58,6 +58,59 @@ function mint_codes(PDO $pdo, int $count, string $batch = 'admin', ?string $issu
     return $made;
 }
 
+/**
+ * Is the code_redemptions table present yet? Recording a use is best-effort:
+ * on a live DB the table arrives via a manual migration, and until then sign-up
+ * must not break, so callers skip recording when this is false. Cached.
+ */
+function code_redemptions_supported(PDO $pdo): bool
+{
+    static $has = null;
+    if ($has !== null) { return $has; }
+    try {
+        $has = (bool)$pdo->query("SHOW TABLES LIKE 'code_redemptions'")->fetchColumn();
+    } catch (\Throwable $e) {
+        $has = false;
+    }
+    return $has;
+}
+
+/**
+ * Record that an access code was used to set up an account. One row per use, so
+ * a shared universal code accrues a row per sign-up. No-ops (safely) until the
+ * table exists. Call inside the sign-up transaction.
+ */
+function record_redemption(PDO $pdo, int $codeId, int $userId, string $email, ?string $batchLabel): void
+{
+    if (!code_redemptions_supported($pdo)) { return; }
+    $pdo->prepare(
+        'INSERT INTO code_redemptions (code_id, user_id, email, batch_label, redeemed_at)
+         VALUES (?, ?, ?, ?, ?)'
+    )->execute([$codeId, $userId, $email, $batchLabel, now_dt()]);
+}
+
+/** How many times a universal (shared) code has been used to sign up. */
+function universal_use_count(PDO $pdo): int
+{
+    if (!code_redemptions_supported($pdo)) { return 0; }
+    $s = $pdo->query("SELECT COUNT(*) FROM code_redemptions WHERE batch_label = '__universal__'");
+    return (int)$s->fetchColumn();
+}
+
+/** Each universal-code sign-up: email and when, newest first. */
+function universal_redemptions(PDO $pdo, int $limit = 500): array
+{
+    if (!code_redemptions_supported($pdo)) { return []; }
+    $limit = max(1, min($limit, 2000));
+    $s = $pdo->query(
+        "SELECT email, redeemed_at FROM code_redemptions
+          WHERE batch_label = '__universal__'
+          ORDER BY redeemed_at DESC, id DESC
+          LIMIT $limit"
+    );
+    return $s->fetchAll();
+}
+
 /** Count codes by status, for the admin view. */
 function code_counts(PDO $pdo): array
 {
