@@ -20,6 +20,7 @@ foreach ($groups as $g) { $total += (int)$g['count']; }
 
 json_out([
     'tracked' => code_redemptions_supported($pdo),
+    'slots'   => access_codes_slots_supported($pdo),
     'total'   => $total,
     'groups'  => $groups,
 ]);

@@ -14,7 +14,7 @@ return [
 
     // Where to send someone who reaches the claim/thank-you page without a
     // matching purchase (so we can invite them to buy).
-    'purchase_url'  => 'https://www.wyzcore.com/en/product-detail/the-diy-creator-starter-toolkit/14644/',
+    'purchase_url'  => 'https://www.wyzcore.com/en/checkout/?product_id=14644&product_type=digital_product&price_id=308265',
 
     // The set-password ("you're in") email is a backup for buyers who do not
     // finish on the thank-you page. It is sent this many minutes after the

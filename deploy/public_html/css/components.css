@@ -304,6 +304,11 @@
 /* Universal code uses, one block per specific code (kept apart across rotations). */
 .uni-code { padding: var(--space-md) 0; border-top: 1px solid var(--light-gray); }
 .uni-code:first-child { border-top: 0; padding-top: 0; }
+.uni-slots { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-sm); margin: var(--space-xs) 0 var(--space-sm); }
+.uni-slots__label { font-size: 13px; font-weight: 600; color: var(--wyz-navy); }
+.uni-slots__input { max-width: 120px; }
+.uni-slots__state { font-size: 13px; }
+.uni-slots__state--full { color: var(--wyz-orange); font-weight: 700; }
 .access-cell { white-space: nowrap; }
 .access-cell .btn { margin-left: var(--space-xs); }
 .access-tag { font-size: 12px; font-weight: 700; color: var(--success-ink); }

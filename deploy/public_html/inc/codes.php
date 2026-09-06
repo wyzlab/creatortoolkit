@@ -138,8 +138,10 @@ function redemption_counts_by_code(PDO $pdo, array $codeIds): array
  */
 function universal_codes_with_uses(PDO $pdo): array
 {
+    $hasSlots = access_codes_slots_supported($pdo);
+    $maxCol   = $hasSlots ? ', max_uses' : '';
     $codes = $pdo->query(
-        "SELECT id, code_display, status, created_at FROM access_codes
+        "SELECT id, code_display, status, created_at$maxCol FROM access_codes
           WHERE batch_label = '__universal__' ORDER BY id DESC"
     )->fetchAll();
 
@@ -168,6 +170,7 @@ function universal_codes_with_uses(PDO $pdo): array
             );
         }
         $disp = (string)$c['code_display'];
+        $max  = ($hasSlots && $c['max_uses'] !== null) ? (int)$c['max_uses'] : null;
         $out[] = [
             'code_id'    => (int)$c['id'],
             // Older universal codes stored only the last 4; keep them masked.
@@ -175,10 +178,86 @@ function universal_codes_with_uses(PDO $pdo): array
             'status'     => (string)$c['status'],
             'created_at' => $c['created_at'],
             'count'      => count($uses),
+            'max_uses'   => $max,                                  // null = unlimited
+            'full'       => ($max !== null && count($uses) >= $max),
             'uses'       => $uses,
         ];
     }
     return $out;
+}
+
+/** Does access_codes have the max_uses (slot cap) column yet? Cached. */
+function access_codes_slots_supported(PDO $pdo): bool
+{
+    static $has = null;
+    if ($has !== null) { return $has; }
+    try {
+        $has = (bool)$pdo->query("SHOW COLUMNS FROM access_codes LIKE 'max_uses'")->fetchColumn();
+    } catch (\Throwable $e) {
+        $has = false;
+    }
+    return $has;
+}
+
+/** How many sign-ups have used this specific code. */
+function code_use_count(PDO $pdo, int $codeId): int
+{
+    if (!code_redemptions_supported($pdo)) { return 0; }
+    $s = $pdo->prepare('SELECT COUNT(*) FROM code_redemptions WHERE code_id = ?');
+    $s->execute([$codeId]);
+    return (int)$s->fetchColumn();
+}
+
+/** Set (or clear) a universal code's slot cap. $max <= 0 or null clears it. */
+function set_code_max_uses(PDO $pdo, int $codeId, ?int $max): bool
+{
+    if (!access_codes_slots_supported($pdo)) { return false; }
+    $val = ($max !== null && $max > 0) ? $max : null;
+    $s = $pdo->prepare("UPDATE access_codes SET max_uses = ? WHERE id = ? AND batch_label = '__universal__'");
+    $s->execute([$val, $codeId]);
+    return $s->rowCount() >= 0;
+}
+
+/**
+ * A universal code's remaining slots given a known use count, or null if the
+ * code is uncapped / slots unsupported.
+ */
+function code_slots_left(PDO $pdo, int $codeId, int $useCount): ?int
+{
+    if (!access_codes_slots_supported($pdo)) { return null; }
+    $s = $pdo->prepare("SELECT max_uses FROM access_codes WHERE id = ? LIMIT 1");
+    $s->execute([$codeId]);
+    $max = $s->fetchColumn();
+    if ($max === null || $max === false) { return null; }
+    return max(0, (int)$max - $useCount);
+}
+
+/**
+ * Email every admin that a universal code has filled up and should be rotated.
+ * Best-effort: never throws into the caller.
+ */
+function notify_admins_universal_full(PDO $pdo, string $code, int $used): void
+{
+    try {
+        require_once __DIR__ . '/mailer.php';
+        $admins = $pdo->query("SELECT email FROM users WHERE role = 'admin' AND status = 'active'")->fetchAll();
+        if (!$admins) { return; }
+        $panel = rtrim((string)(APP['app_url'] ?? ''), '/') . '/admin/';
+        $subject = 'Universal code full — time to rotate';
+        $html = '<div style="font-family:Inter,Arial,sans-serif;max-width:560px">'
+              . '<h2 style="font-family:Montserrat,Arial,sans-serif">Your universal code is full</h2>'
+              . '<p>The shared code <strong>' . e($code) . '</strong> reached its limit of <strong>' . $used . '</strong> sign-ups. New sign-ups with it are now being refused.</p>'
+              . '<p>Rotate it to a fresh code in the admin console (Universal code &rarr; Rotate), then paste the new code into your next webinar.</p>'
+              . '<p><a href="' . e($panel) . '">Open the admin console</a></p>'
+              . '</div>';
+        $text = "Your universal code is full.\n\nThe shared code $code reached its limit of $used sign-ups. "
+              . "New sign-ups with it are now refused.\n\nRotate it in the admin console: $panel\n";
+        foreach ($admins as $a) {
+            mail_queue('admin_alert', (string)$a['email'], $subject, $html, $text, null);
+        }
+    } catch (\Throwable $e) {
+        error_log('notify_admins_universal_full failed: ' . $e->getMessage());
+    }
 }
 
 /** Count codes by status, for the admin view. */
