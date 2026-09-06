@@ -9,6 +9,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/../../inc/bootstrap.php';
 require_once __DIR__ . '/../../inc/guard.php';
+require_once __DIR__ . '/../../inc/codes.php';
 
 api_require_admin();
 $pdo = db();
@@ -32,7 +33,7 @@ $total = (int)($where
       })()
     : $pdo->query('SELECT COUNT(*) FROM access_codes')->fetchColumn());
 
-$sql = "SELECT ac.code_display, ac.batch_label, ac.issued_to_email, ac.status,
+$sql = "SELECT ac.id, ac.code_display, ac.batch_label, ac.issued_to_email, ac.status,
                ac.created_at, ac.claimed_at, u.email AS claimed_email
           FROM access_codes ac
           LEFT JOIN users u ON u.id = ac.claimed_by_user_id
@@ -41,9 +42,13 @@ $sql = "SELECT ac.code_display, ac.batch_label, ac.issued_to_email, ac.status,
          LIMIT $limit OFFSET $offset";
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
+$rows = $stmt->fetchAll();
+
+// How many sign-ups each code produced (a shared universal code accrues many).
+$useCounts = redemption_counts_by_code($pdo, array_map(fn($r) => (int)$r['id'], $rows));
 
 $codes = [];
-foreach ($stmt->fetchAll() as $r) {
+foreach ($rows as $r) {
     // Newer codes store the full code (readable); older ones kept only the
     // last 4, which stay masked because the rest was never stored.
     $disp = (string)$r['code_display'];
@@ -56,6 +61,8 @@ foreach ($stmt->fetchAll() as $r) {
         'claimed_by' => $r['claimed_email'],
         'created_at' => $r['created_at'],
         'claimed_at' => $r['claimed_at'],
+        'is_universal' => ($r['batch_label'] === '__universal__'),
+        'uses' => (int)($useCounts[(int)$r['id']] ?? 0),
     ];
 }
 

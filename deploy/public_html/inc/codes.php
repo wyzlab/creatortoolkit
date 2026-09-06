@@ -111,6 +111,68 @@ function universal_redemptions(PDO $pdo, int $limit = 500): array
     return $s->fetchAll();
 }
 
+/**
+ * Redemption count per code_id, for a given set of code ids. Empty when the
+ * table is absent or no ids are given. Used by the Recent codes table so a
+ * shared code shows how many sign-ups it produced.
+ */
+function redemption_counts_by_code(PDO $pdo, array $codeIds): array
+{
+    if (!$codeIds || !code_redemptions_supported($pdo)) { return []; }
+    $ids = array_values(array_unique(array_map('intval', $codeIds)));
+    $in  = implode(',', array_fill(0, count($ids), '?'));
+    $s = $pdo->prepare("SELECT code_id, COUNT(*) c FROM code_redemptions
+                         WHERE code_id IN ($in) GROUP BY code_id");
+    $s->execute($ids);
+    $out = [];
+    foreach ($s->fetchAll() as $r) { $out[(int)$r['code_id']] = (int)$r['c']; }
+    return $out;
+}
+
+/**
+ * Every universal (shared) code, newest first, each with its own list of
+ * sign-ups. Grouping by the specific code lets the admin keep the users of one
+ * code separate from another after a rotation.
+ *
+ * @return array<int,array{code_id:int,code:string,status:string,created_at:string,count:int,uses:array}>
+ */
+function universal_codes_with_uses(PDO $pdo): array
+{
+    $codes = $pdo->query(
+        "SELECT id, code_display, status, created_at FROM access_codes
+          WHERE batch_label = '__universal__' ORDER BY id DESC"
+    )->fetchAll();
+
+    $tracked = code_redemptions_supported($pdo);
+    $redStmt = $tracked
+        ? $pdo->prepare("SELECT email, redeemed_at FROM code_redemptions
+                          WHERE code_id = ? ORDER BY redeemed_at DESC, id DESC")
+        : null;
+
+    $out = [];
+    foreach ($codes as $c) {
+        $uses = [];
+        if ($redStmt) {
+            $redStmt->execute([(int)$c['id']]);
+            $uses = array_map(
+                fn($r) => ['email' => $r['email'], 'redeemed_at' => $r['redeemed_at']],
+                $redStmt->fetchAll()
+            );
+        }
+        $disp = (string)$c['code_display'];
+        $out[] = [
+            'code_id'    => (int)$c['id'],
+            // Older universal codes stored only the last 4; keep them masked.
+            'code'       => mb_strlen($disp) > 4 ? $disp : ('****-' . $disp),
+            'status'     => (string)$c['status'],
+            'created_at' => $c['created_at'],
+            'count'      => count($uses),
+            'uses'       => $uses,
+        ];
+    }
+    return $out;
+}
+
 /** Count codes by status, for the admin view. */
 function code_counts(PDO $pdo): array
 {

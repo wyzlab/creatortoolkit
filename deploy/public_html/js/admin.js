@@ -50,53 +50,79 @@
       var r = await T.apiGet('/api/admin/list-codes.php?limit=50');
       if (!r.codes.length) { tbody.innerHTML = '<tr><td colspan="5" class="muted">No codes yet.</td></tr>'; return; }
       tbody.innerHTML = r.codes.map(function (c) {
+        // A universal code stays shared (never flips to "claimed" in the DB), so
+        // show its real state plus how many sign-ups used it, rather than a
+        // misleading "unclaimed".
+        var status = c.status, claimedBy = c.claimed_by || '';
+        if (c.is_universal) {
+          status = c.status === 'revoked' ? 'revoked' : (c.uses > 0 ? 'claimed' : 'active');
+          claimedBy = c.uses + (c.uses === 1 ? ' sign-up' : ' sign-ups');
+        }
         return '<tr><td>' + esc(c.display) + '</td><td>' + esc(c.batch || '') + '</td><td>' +
-          esc(c.issued_to || '') + '</td><td>' + esc(c.status) + '</td><td>' + esc(c.claimed_by || '') + '</td></tr>';
+          esc(c.issued_to || '') + '</td><td>' + esc(status) + '</td><td>' + esc(claimedBy) + '</td></tr>';
       }).join('');
     } catch (e) {
       tbody.innerHTML = '<tr><td colspan="5" class="notice notice--error">Could not load codes.</td></tr>';
     }
   }
 
-  // ── Universal code uses (reconcile against purchases) ────────────────
-  var usesCsv = '';
+  // ── Universal code uses (reconcile against purchases), grouped per code ─
+  function csvFor(uses) {
+    return 'email,date_used\n' + uses.map(function (u) {
+      return '"' + String(u.email).replace(/"/g, '""') + '","' + u.redeemed_at + '"';
+    }).join('\n');
+  }
+  function copyText(btn, text) {
+    var label = btn.textContent;
+    (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject())
+      .then(function () { btn.textContent = 'Copied'; })
+      .catch(function () { btn.textContent = 'Copy failed'; });
+    setTimeout(function () { btn.textContent = label; }, 1500);
+  }
   async function loadUniversalUses() {
-    var countEl = T.el('[data-universal-uses-count]', root);
-    var tbl = T.el('[data-universal-uses]', root);
+    var host = T.el('[data-universal-uses-groups]', root);
     var note = T.el('[data-universal-uses-note]', root);
-    var copyBtn = T.el('[data-copy-uses]', root);
-    if (!countEl) return;
+    if (!host) return;
     try {
       var r = await T.apiGet('/api/admin/universal-uses.php');
-      countEl.textContent = r.count + (r.count === 1 ? ' sign-up used the universal code' : ' sign-ups used the universal code');
       if (!r.tracked) {
         T.setNotice(note, 'Tracking is not switched on yet. Run the code_redemptions migration on the database to start recording uses.', null);
       }
-      if (r.uses && r.uses.length) {
-        tbl.querySelector('tbody').innerHTML = r.uses.map(function (u) {
-          return '<tr><td>' + esc(u.email) + '</td><td>' + esc(u.redeemed_at) + '</td></tr>';
-        }).join('');
-        tbl.hidden = false;
-        usesCsv = 'email,date_used\n' + r.uses.map(function (u) {
-          return '"' + String(u.email).replace(/"/g, '""') + '","' + u.redeemed_at + '"';
-        }).join('\n');
-        if (copyBtn) copyBtn.hidden = false;
-      } else {
-        tbl.hidden = true;
-        if (copyBtn) copyBtn.hidden = true;
-      }
+      var groups = r.groups || [];
+      if (!groups.length) { host.innerHTML = '<p class="muted">No universal code yet. Create one above.</p>'; return; }
+
+      host.innerHTML = '';
+      groups.forEach(function (g) {
+        var wrap = document.createElement('div');
+        wrap.className = 'uni-code';
+        var stateLabel = g.status === 'revoked' ? 'rotated out' : 'active';
+        var head = document.createElement('div');
+        head.className = 'admin-result-head';
+        head.innerHTML = '<strong>' + esc(g.code) + ' <span class="muted">(' + stateLabel + ')</span> — ' +
+          g.count + (g.count === 1 ? ' sign-up' : ' sign-ups') + '</strong>';
+        if (g.uses.length) {
+          var copy = document.createElement('button');
+          copy.type = 'button'; copy.className = 'btn btn--sm btn--ghost'; copy.textContent = 'Copy as CSV';
+          copy.addEventListener('click', function () { copyText(copy, csvFor(g.uses)); });
+          head.appendChild(copy);
+        }
+        wrap.appendChild(head);
+
+        if (g.uses.length) {
+          var sx = document.createElement('div'); sx.className = 'scroll-x';
+          sx.innerHTML = '<table class="admin-table"><thead><tr><th>Email</th><th>Date used</th></tr></thead><tbody>' +
+            g.uses.map(function (u) { return '<tr><td>' + esc(u.email) + '</td><td>' + esc(u.redeemed_at) + '</td></tr>'; }).join('') +
+            '</tbody></table>';
+          wrap.appendChild(sx);
+        } else {
+          var p = document.createElement('p'); p.className = 'muted'; p.textContent = 'No sign-ups with this code yet.';
+          wrap.appendChild(p);
+        }
+        host.appendChild(wrap);
+      });
     } catch (e) {
-      countEl.textContent = 'Could not load universal code uses.';
+      host.innerHTML = '<p class="notice notice--error">Could not load universal code uses.</p>';
     }
-  }
-  var copyUsesBtn = T.el('[data-copy-uses]', root);
-  if (copyUsesBtn) {
-    copyUsesBtn.addEventListener('click', async function () {
-      var label = copyUsesBtn.textContent;
-      try { await navigator.clipboard.writeText(usesCsv); copyUsesBtn.textContent = 'Copied'; }
-      catch (e) { copyUsesBtn.textContent = 'Copy failed'; }
-      setTimeout(function () { copyUsesBtn.textContent = label; }, 1500);
-    });
   }
 
   // ── Generate a batch ─────────────────────────────────────────────────
@@ -160,6 +186,7 @@
         T.el('[data-universal-result]', root).hidden = false;
         T.setNotice(notice, 'Done. Paste this code into your WyzCore automation email.', 'success');
         loadCodes();
+        loadUniversalUses();
       } catch (e) {
         T.setNotice(notice, e.message, 'error');
       } finally { uniBtn.disabled = false; }

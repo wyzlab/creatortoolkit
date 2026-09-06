@@ -1,8 +1,9 @@
 <?php
 /**
- * GET /api/admin/universal-uses.php  ->  {count, uses:[{email, redeemed_at}], tracked}
- * Admin only. How many sign-ups used the shared universal code, and the email
- * plus date of each, so the admin can match them against actual purchases.
+ * GET /api/admin/universal-uses.php  ->  {tracked, total, groups:[...]}
+ * Admin only. Every universal (shared) code, each with the sign-ups that used
+ * it — email and date — so the admin can reconcile against purchases and keep
+ * the users of one code separate from another after a rotation.
  */
 
 declare(strict_types=1);
@@ -13,14 +14,12 @@ require_once __DIR__ . '/../../inc/codes.php';
 api_require_admin();
 $pdo = db();
 
-$tracked = code_redemptions_supported($pdo);
-$uses = universal_redemptions($pdo);
+$groups = universal_codes_with_uses($pdo);
+$total  = 0;
+foreach ($groups as $g) { $total += (int)$g['count']; }
 
 json_out([
-    'tracked' => $tracked,
-    'count'   => universal_use_count($pdo),
-    'uses'    => array_map(fn($r) => [
-        'email'       => $r['email'],
-        'redeemed_at' => $r['redeemed_at'],
-    ], $uses),
+    'tracked' => code_redemptions_supported($pdo),
+    'total'   => $total,
+    'groups'  => $groups,
 ]);

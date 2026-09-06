@@ -299,6 +299,10 @@
 .admin-table th, .admin-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--light-gray); }
 .admin-table th { font-family: var(--font-heading); color: var(--wyz-navy); font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; }
 
+/* Universal code uses, one block per specific code (kept apart across rotations). */
+.uni-code { padding: var(--space-md) 0; border-top: 1px solid var(--light-gray); }
+.uni-code:first-child { border-top: 0; padding-top: 0; }
+
 /* Long unbroken strings (emails, access codes, URLs) must never force the page
    to scroll sideways on a phone. */
 .tool-row__name, .result-line__value, .offer-row__meta, .build-banner__name,
