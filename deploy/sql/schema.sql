@@ -249,3 +249,10 @@ CREATE TABLE IF NOT EXISTS email_optouts (
   email      VARCHAR(190) NOT NULL UNIQUE,
   created_at DATETIME NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Editable key/value settings (wyzcore webhook tokens, etc). Set from admin.
+CREATE TABLE IF NOT EXISTS app_settings (
+  name       VARCHAR(64) NOT NULL PRIMARY KEY,
+  value      TEXT NULL,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

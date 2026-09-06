@@ -41,6 +41,37 @@ require __DIR__ . '/../inc/head.php';
     </div>
   </section>
 
+  <!-- WyzCore purchase webhook (paid access) -->
+  <section class="card admin-section" data-integration>
+    <h2>WyzCore purchase webhook</h2>
+    <p class="muted">When someone buys the toolkit on WyzCore, WyzCore calls this page and access is granted automatically — no codes. Paste the two tokens from your WyzCore webhook settings here to switch it on. They are stored safely in the database (never shown again), so you don't need to touch any files.</p>
+
+    <div class="field">
+      <label class="field__label">Webhook URL (set this in WyzCore)</label>
+      <div class="admin-result-head">
+        <input class="input" data-webhook-url readonly value="Loading&hellip;">
+        <button class="btn btn--sm btn--ghost" type="button" data-copy-webhook>Copy</button>
+      </div>
+    </div>
+
+    <p class="notice" data-integration-status hidden></p>
+
+    <form data-form="integrations" class="admin-form">
+      <div class="field">
+        <label class="field__label" for="int-sig">Signature token</label>
+        <input class="input" id="int-sig" name="signature_token" type="password" autocomplete="off"
+               placeholder="Paste to set — leave blank to keep the current one">
+      </div>
+      <div class="field">
+        <label class="field__label" for="int-acc">Access token</label>
+        <input class="input" id="int-acc" name="access_token" type="password" autocomplete="off"
+               placeholder="Paste to set — leave blank to keep the current one">
+      </div>
+      <button class="btn btn--cta" type="submit">Save tokens</button>
+    </form>
+    <div class="notice" data-integration-notice hidden></div>
+  </section>
+
   <!-- Universal code for WyzCore -->
   <section class="card admin-section">
     <h2>Universal code (for WyzCore emails)</h2>

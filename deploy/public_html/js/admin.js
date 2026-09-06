@@ -281,6 +281,66 @@
     });
   }
 
+  // ── WyzCore purchase webhook (tokens stored in the DB) ───────────────
+  var intSection = T.el('[data-integration]', root);
+  if (intSection) {
+    var intStatus = T.el('[data-integration-status]', root);
+    var webhookInput = T.el('[data-webhook-url]', root);
+
+    function renderIntStatus(s) {
+      if (webhookInput && s.webhook_url) { webhookInput.value = s.webhook_url; }
+      var msg, kind;
+      if (s.signature_set && s.access_set) {
+        msg = 'Live. Both tokens are set — purchases will grant access automatically.'; kind = 'success';
+      } else if (s.signature_set || s.access_set) {
+        msg = 'Live. ' + (s.signature_set ? 'Signature token' : 'Access token') +
+              ' is set; add the other for the strongest verification.'; kind = 'success';
+      } else {
+        msg = 'Not live yet. Paste your WyzCore tokens below to switch on automatic access.'; kind = null;
+      }
+      T.setNotice(intStatus, msg, kind);
+    }
+
+    async function loadIntegrations() {
+      try { renderIntStatus(await T.apiGet('/api/admin/get-integrations.php')); }
+      catch (e) { T.setNotice(intStatus, 'Could not load webhook status.', 'error'); }
+    }
+
+    var copyWebhook = T.el('[data-copy-webhook]', root);
+    if (copyWebhook) {
+      copyWebhook.addEventListener('click', function () {
+        if (!webhookInput) return;
+        var label = copyWebhook.textContent;
+        (navigator.clipboard ? navigator.clipboard.writeText(webhookInput.value) : Promise.reject())
+          .then(function () { copyWebhook.textContent = 'Copied'; })
+          .catch(function () { webhookInput.select(); });
+        setTimeout(function () { copyWebhook.textContent = label; }, 1500);
+      });
+    }
+
+    var intForm = T.el('[data-form="integrations"]', root);
+    intForm.addEventListener('submit', async function (ev) {
+      ev.preventDefault();
+      var notice = T.el('[data-integration-notice]', root);
+      var btn = intForm.querySelector('button[type="submit"]');
+      var sig = intForm.signature_token.value.trim();
+      var acc = intForm.access_token.value.trim();
+      if (!sig && !acc) { T.setNotice(notice, 'Nothing to save — paste at least one token.', null); return; }
+      btn.disabled = true;
+      T.setNotice(notice, 'Saving...', null);
+      try {
+        var r = await T.apiPost('/api/admin/set-integrations.php', { signature_token: sig, access_token: acc });
+        intForm.reset();
+        T.setNotice(notice, 'Saved.', 'success');
+        renderIntStatus(r);
+      } catch (e) {
+        T.setNotice(notice, e.message, 'error');
+      } finally { btn.disabled = false; }
+    });
+
+    loadIntegrations();
+  }
+
   // ── Copy buttons ─────────────────────────────────────────────────────
   T.els('[data-copy]', root).forEach(function (b) {
     var which = b.getAttribute('data-copy');

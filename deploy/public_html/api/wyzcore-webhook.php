@@ -18,6 +18,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/../inc/bootstrap.php';
 require_once __DIR__ . '/../inc/provision.php';
+require_once __DIR__ . '/../inc/settings.php';
 
 require_post();
 
@@ -36,10 +37,12 @@ error_log('WYZCORE_WEBHOOK headers=' . json_encode($headers)
 );
 
 $secrets   = require CONFIG_DIR . '/secrets.php';
-$sigToken  = (string)($secrets['wyzcore_signature_token'] ?? '');
-$accToken  = (string)($secrets['wyzcore_access_token'] ?? '');
-$sigSet    = $sigToken !== '' && strpos($sigToken, 'REPLACE') !== 0;
-$accSet    = $accToken !== '' && strpos($accToken, 'REPLACE') !== 0;
+// Admin-managed database settings take precedence over the secrets file, so the
+// tokens can be set from the admin console without any filesystem access.
+$sigToken  = token_setting(db(), 'wyzcore_signature_token', (string)($secrets['wyzcore_signature_token'] ?? ''));
+$accToken  = token_setting(db(), 'wyzcore_access_token',    (string)($secrets['wyzcore_access_token'] ?? ''));
+$sigSet    = token_is_set($sigToken);
+$accSet    = token_is_set($accToken);
 
 // Log-only mode until at least one credential is set. With neither, we can't
 // tell a real wyzcore delivery from a forged one, so we only log.
