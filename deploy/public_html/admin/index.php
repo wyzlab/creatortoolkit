@@ -70,6 +70,13 @@ require __DIR__ . '/../inc/head.php';
       <button class="btn btn--cta" type="submit">Save tokens</button>
     </form>
     <div class="notice" data-integration-notice hidden></div>
+
+    <div class="admin-result-head" style="margin-top:1rem">
+      <strong>Recent webhook deliveries</strong>
+      <button class="btn btn--sm btn--ghost" type="button" data-webhook-refresh>Refresh</button>
+    </div>
+    <p class="muted">Use WyzCore's "send test data" here, then Refresh. Each delivery shows what was detected, so you can confirm a real sale would grant access.</p>
+    <div data-webhook-log><p class="muted">Loading&hellip;</p></div>
   </section>
 
   <!-- Universal code for WyzCore -->
