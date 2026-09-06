@@ -58,6 +58,47 @@
     }
   }
 
+  // ── Universal code uses (reconcile against purchases) ────────────────
+  var usesCsv = '';
+  async function loadUniversalUses() {
+    var countEl = T.el('[data-universal-uses-count]', root);
+    var tbl = T.el('[data-universal-uses]', root);
+    var note = T.el('[data-universal-uses-note]', root);
+    var copyBtn = T.el('[data-copy-uses]', root);
+    if (!countEl) return;
+    try {
+      var r = await T.apiGet('/api/admin/universal-uses.php');
+      countEl.textContent = r.count + (r.count === 1 ? ' sign-up used the universal code' : ' sign-ups used the universal code');
+      if (!r.tracked) {
+        T.setNotice(note, 'Tracking is not switched on yet. Run the code_redemptions migration on the database to start recording uses.', null);
+      }
+      if (r.uses && r.uses.length) {
+        tbl.querySelector('tbody').innerHTML = r.uses.map(function (u) {
+          return '<tr><td>' + esc(u.email) + '</td><td>' + esc(u.redeemed_at) + '</td></tr>';
+        }).join('');
+        tbl.hidden = false;
+        usesCsv = 'email,date_used\n' + r.uses.map(function (u) {
+          return '"' + String(u.email).replace(/"/g, '""') + '","' + u.redeemed_at + '"';
+        }).join('\n');
+        if (copyBtn) copyBtn.hidden = false;
+      } else {
+        tbl.hidden = true;
+        if (copyBtn) copyBtn.hidden = true;
+      }
+    } catch (e) {
+      countEl.textContent = 'Could not load universal code uses.';
+    }
+  }
+  var copyUsesBtn = T.el('[data-copy-uses]', root);
+  if (copyUsesBtn) {
+    copyUsesBtn.addEventListener('click', async function () {
+      var label = copyUsesBtn.textContent;
+      try { await navigator.clipboard.writeText(usesCsv); copyUsesBtn.textContent = 'Copied'; }
+      catch (e) { copyUsesBtn.textContent = 'Copy failed'; }
+      setTimeout(function () { copyUsesBtn.textContent = label; }, 1500);
+    });
+  }
+
   // ── Generate a batch ─────────────────────────────────────────────────
   var genForm = T.el('[data-form="gen"]', root);
   genForm.addEventListener('submit', async function (ev) {
@@ -159,4 +200,5 @@
 
   loadStats();
   loadCodes();
+  loadUniversalUses();
 })();

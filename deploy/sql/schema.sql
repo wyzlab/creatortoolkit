@@ -41,6 +41,23 @@ CREATE TABLE IF NOT EXISTS access_codes (
   FOREIGN KEY (claimed_by_user_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- One row per time an access code is used to set up an account. A single-use
+-- code produces one row; a shared universal code produces one per sign-up, so
+-- the admin can count uses and reconcile the emails against actual purchases.
+CREATE TABLE IF NOT EXISTS code_redemptions (
+  id           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  code_id      INT UNSIGNED NOT NULL,
+  user_id      INT UNSIGNED NOT NULL,
+  email        VARCHAR(190) NOT NULL,
+  batch_label  VARCHAR(80) NULL,
+  redeemed_at  DATETIME NOT NULL,
+  INDEX idx_redemption_batch (batch_label, redeemed_at),
+  INDEX idx_redemption_code (code_id),
+  INDEX idx_redemption_email (email),
+  FOREIGN KEY (code_id) REFERENCES access_codes(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS password_resets (
   id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   user_id     INT UNSIGNED NOT NULL,
