@@ -57,15 +57,17 @@ function make_set_password_link(PDO $pdo, int $userId): string
 
 /**
  * Grant access to an email automatically (purchase flow). Idempotent.
- * - new email: create the account and email a set-password link.
- * - exists, no password yet: email a fresh set-password link.
+ * Creates/reactivates the account but does NOT email immediately: buyers finish
+ * on the thank-you page, and the set-password email is a delayed backup sent by
+ * tools/send-claim-reminders.php only if the account is still unclaimed after
+ * the configured delay.
+ * - new email: create the account (no password yet).
+ * - exists, no password yet: just make sure it is active.
  * - exists, has password: nothing to do.
  * Returns 'provisioned' | 're_sent' | 'already_active'.
  */
 function grant_or_refresh_access(PDO $pdo, string $email): string
 {
-    require_once __DIR__ . '/mailer.php';
-
     $u = $pdo->prepare('SELECT id, password_hash FROM users WHERE email = ? LIMIT 1');
     $u->execute([$email]);
     $row = $u->fetch();
@@ -78,21 +80,17 @@ function grant_or_refresh_access(PDO $pdo, string $email): string
 
     if ($row) {
         $pdo->prepare("UPDATE users SET status='active' WHERE id=?")->execute([(int)$row['id']]);
-        $link = make_set_password_link($pdo, (int)$row['id']);
-        send_setpw_email($pdo, $email, $link, (int)$row['id']);
         return 're_sent';
     }
 
     $pdo->beginTransaction();
     try {
-        $userId = provision_learner($pdo, $email);
-        $link = make_set_password_link($pdo, $userId);
+        provision_learner($pdo, $email);
         $pdo->commit();
     } catch (\Throwable $e) {
         if ($pdo->inTransaction()) { $pdo->rollBack(); }
         throw $e;
     }
-    send_setpw_email($pdo, $email, $link, $userId);
     return 'provisioned';
 }
 

@@ -13,19 +13,27 @@ return [
     'contact_email' => 'hello@wyzcore.com',
 
     // Where to send someone who reaches the claim/thank-you page without a
-    // matching purchase (so we can invite them to buy). Set this to your
-    // wyzcore checkout link for the toolkit. Empty = show a plain message only.
-    'purchase_url'  => '',
+    // matching purchase (so we can invite them to buy).
+    'purchase_url'  => 'https://www.wyzcore.com/en/product-detail/the-diy-creator-starter-toolkit/14644/',
+
+    // The set-password ("you're in") email is a backup for buyers who do not
+    // finish on the thank-you page. It is sent this many minutes after the
+    // purchase, and ONLY if the account is still unclaimed (no password set).
+    // Sent by tools/send-claim-reminders.php on a schedule (Hostinger cron).
+    'claim_reminder_delay_minutes' => 30,
 
     // wyzcore.com sells many products; the purchase webhook grants toolkit
-    // access ONLY when the purchased item's title contains one of these
-    // (case-insensitive) phrases. Set these to match how the toolkit product is
-    // named in your wyzcore store, so buyers of OTHER products never get access.
+    // access ONLY when the sale matches the toolkit. It matches if the item's
+    // title contains one of these (case-insensitive) phrases, OR the sale's
+    // product id is in toolkit_product_ids below.
     'toolkit_product_match' => [
         'diy creator',
         'creator starter toolkit',
         'diy-creator-starter-toolkit',
     ],
+    // The toolkit's product id in wyzcore (more robust than the title, which can
+    // be renamed or translated). From the product URL /.../14644/.
+    'toolkit_product_ids' => ['14644'],
 
     // WyzAI floating widget (the blue chat button, bottom-right). Embedded in
     // the footer of every page. This is the live WyzQuest agency for the toolkit.

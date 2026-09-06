@@ -83,9 +83,10 @@ if ($email === '' || !is_email($email)) {
 
 // wyzcore sells many products. Only this sale's TOOLKIT line grants access;
 // a sale of any other product is acknowledged and ignored.
-$products = find_products($payload);
-if (!purchase_is_toolkit($products)) {
-    error_log('WYZCORE_WEBHOOK ignored: product not the toolkit. products=' . json_encode($products));
+$products   = find_products($payload);
+$productIds = find_product_ids($payload);
+if (!purchase_is_toolkit($products, $productIds)) {
+    error_log('WYZCORE_WEBHOOK ignored: not the toolkit. titles=' . json_encode($products) . ' ids=' . json_encode($productIds));
     json_out(['ok' => true, 'action' => 'ignored', 'reason' => 'not the toolkit product'], 200);
 }
 
@@ -179,14 +180,42 @@ function find_products(array $p): array
     return array_values(array_unique(array_filter($titles, 'is_string')));
 }
 
-/**
- * Does any product title identify the DIY Creator Toolkit? Matches (case
- * insensitive) against the configured phrases and the product slug.
- * If the payload carried NO product titles at all, we do NOT assume it is the
- * toolkit — better to ignore an unrecognised sale than to grant wrongly.
- */
-function purchase_is_toolkit(array $titles): bool
+/** Collect product ids from the payload (product_id, item id, line-item ids). */
+function find_product_ids(array $p): array
 {
+    $ids = [];
+    foreach (['product_id', 'product_code', 'item_id', 'sku', 'id'] as $k) {
+        if (isset($p[$k]) && (is_string($p[$k]) || is_int($p[$k]))) { $ids[] = (string)$p[$k]; }
+    }
+    foreach (['line_items', 'items', 'products', 'order_items', 'lines', 'cart'] as $k) {
+        if (!empty($p[$k]) && is_array($p[$k])) {
+            foreach ($p[$k] as $item) {
+                if (is_array($item)) { $ids = array_merge($ids, find_product_ids($item)); }
+            }
+        }
+    }
+    foreach (['data', 'order', 'sale', 'purchase', 'subscription', 'checkout'] as $group) {
+        if (isset($p[$group]) && is_array($p[$group])) {
+            $ids = array_merge($ids, find_product_ids($p[$group]));
+        }
+    }
+    return array_values(array_unique(array_filter($ids, fn($v) => $v !== '')));
+}
+
+/**
+ * Does this sale identify the DIY Creator Toolkit? True if any product id
+ * matches toolkit_product_ids, OR any product title contains a configured
+ * phrase (case-insensitive). If the payload carried NO product titles or ids we
+ * do NOT assume it is the toolkit — better to ignore an unrecognised sale than
+ * to grant wrongly.
+ */
+function purchase_is_toolkit(array $titles, array $ids = []): bool
+{
+    // Product id is the most reliable signal (titles can be renamed/translated).
+    $wantIds = array_map('strval', APP['toolkit_product_ids'] ?? []);
+    foreach ($ids as $id) {
+        if (in_array((string)$id, $wantIds, true)) { return true; }
+    }
     if (!$titles) { return false; }
     $needles = APP['toolkit_product_match'] ?? [];
     $needles[] = 'diy-creator-starter-toolkit';
