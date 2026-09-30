@@ -26,17 +26,6 @@ require_post();
 $raw = file_get_contents('php://input') ?: '';
 $headers = collect_headers();
 
-// Always log for format discovery: to the PHP error log, and (best effort) to
-// a file above the web root you can open in File Manager to read the exact
-// shape of a test delivery: private/webhook-log.txt
-error_log('WYZCORE_WEBHOOK headers=' . json_encode($headers)
-        . ' body=' . substr($raw, 0, 2000));
-@file_put_contents(
-    __DIR__ . '/../../private/webhook-log.txt',
-    '=== ' . now_dt() . " ===\nHEADERS: " . json_encode($headers) . "\nBODY: " . $raw . "\n\n",
-    FILE_APPEND | LOCK_EX
-);
-
 $secrets   = require CONFIG_DIR . '/secrets.php';
 // Admin-managed database settings take precedence over the secrets file, so the
 // tokens can be set from the admin console without any filesystem access.
@@ -44,6 +33,34 @@ $sigToken  = token_setting(db(), 'wyzcore_signature_token', (string)($secrets['w
 $accToken  = token_setting(db(), 'wyzcore_access_token',    (string)($secrets['wyzcore_access_token'] ?? ''));
 $sigSet    = token_is_set($sigToken);
 $accSet    = token_is_set($accToken);
+
+// Redact secrets BEFORE anything is written to a log. The token can arrive in a
+// header (e.g. Authorization) or inside the body; logs must never store it.
+$redactSecrets = function (string $s) use ($sigToken, $accToken): string {
+    foreach ([$sigToken, $accToken] as $t) {
+        if (token_is_set($t)) { $s = str_replace($t, '[redacted]', $s); }
+    }
+    return $s;
+};
+$logHeaders = [];
+foreach ($headers as $k => $v) {
+    $n = strtolower((string)$k);
+    $isAuth = strpos($n, 'auth') !== false || strpos($n, 'token') !== false
+           || strpos($n, 'sign') !== false || strpos($n, 'hash') !== false
+           || strpos($n, 'secret') !== false || strpos($n, 'api-key') !== false
+           || strpos($n, 'apikey') !== false;
+    $logHeaders[$k] = $isAuth ? '[redacted]' : $v;
+}
+
+// Log for format discovery: to the PHP error log, and (best effort) to a file
+// above the web root you can open in the admin console (private/webhook-log.txt).
+error_log('WYZCORE_WEBHOOK headers=' . json_encode($logHeaders)
+        . ' body=' . $redactSecrets(substr($raw, 0, 2000)));
+@file_put_contents(
+    __DIR__ . '/../../private/webhook-log.txt',
+    '=== ' . now_dt() . " ===\nHEADERS: " . json_encode($logHeaders) . "\nBODY: " . $redactSecrets($raw) . "\n\n",
+    FILE_APPEND | LOCK_EX
+);
 
 // Log-only mode until at least one credential is set. With neither, we can't
 // tell a real wyzcore delivery from a forged one, so we only log.

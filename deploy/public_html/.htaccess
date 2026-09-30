@@ -33,8 +33,8 @@ Options -Indexes
   Header always set X-Frame-Options "SAMEORIGIN"
   Header always set X-Content-Type-Options "nosniff"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
-  # HSTS: enable once the certificate is confirmed good on the subdomain.
-  # Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+  # HSTS: enabled — the subdomain serves a valid certificate and forces HTTPS.
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
 </IfModule>
 
 # ── Cache static assets ──────────────────────────────────────────────

@@ -93,4 +93,12 @@ if (!headers_sent()) {
     header('X-Content-Type-Options: nosniff');
     header('Referrer-Policy: strict-origin-when-cross-origin');
     header('X-XSS-Protection: 0');   // modern browsers rely on CSP, not the legacy auditor
+
+    // HSTS: force HTTPS for a year on this host and its subdomains. Only sent
+    // over HTTPS (never commit a browser to HTTPS from a plain-HTTP response).
+    $overHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+              || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+    if ($overHttps) {
+        header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
+    }
 }

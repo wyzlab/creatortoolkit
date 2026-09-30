@@ -78,8 +78,9 @@ try {
     )->execute([$uid, $gate, $slug, count($def['steps']), json_encode($answers), $nowStr, $nowStr, $nowStr]);
 
     // Session id for the result FK.
-    $sid = (int)$pdo->query('SELECT id FROM tool_sessions WHERE user_id = ' . $uid
-         . " AND tool_slug = " . $pdo->quote($slug) . ' LIMIT 1')->fetchColumn();
+    $sidStmt = $pdo->prepare('SELECT id FROM tool_sessions WHERE user_id = ? AND tool_slug = ? LIMIT 1');
+    $sidStmt->execute([$uid, $slug]);
+    $sid = (int)$sidStmt->fetchColumn();
 
     // Build and store the result (replace any prior result for this tool).
     [$resJson, $resHtml] = build_tool_result($slug, $answers, $profile);
