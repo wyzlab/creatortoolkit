@@ -263,6 +263,29 @@
   }
 
   // ── Email test ───────────────────────────────────────────────────────
+  // ── Email test ───────────────────────────────────────────────────────
+  // Show which provider is live (Hostinger / EmailIt / …) and whether it is on.
+  (async function loadMailStatus() {
+    var el = T.el('[data-mail-status]', root);
+    if (!el) return;
+    try {
+      var s = await T.apiGet('/api/admin/get-mail-status.php');
+      var msg, kind;
+      if (!s.configured) {
+        msg = 'Email is not configured yet — messages are only logged, not sent. Add mail.local.php to switch it on.';
+        kind = null;
+      } else if (!s.enabled) {
+        msg = 'Provider: ' + s.provider + ' (' + s.host + ':' + s.port + '), from ' + s.from +
+              ' — but sending is OFF (log-only). Set enabled=true to send.';
+        kind = 'error';
+      } else {
+        msg = 'Live email provider: ' + s.provider + ' (' + s.host + ':' + s.port + '), sending as ' + s.from + '.';
+        kind = 'success';
+      }
+      T.setNotice(el, msg, kind);
+    } catch (e) { /* leave hidden */ }
+  })();
+
   var testForm = T.el('[data-form="testmail"]', root);
   if (testForm) {
     testForm.addEventListener('submit', async function (ev) {
