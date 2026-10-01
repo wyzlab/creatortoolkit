@@ -256,3 +256,16 @@ CREATE TABLE IF NOT EXISTS app_settings (
   value      TEXT NULL,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Pending email confirmations for universal-code sign-ups (webinar codes).
+CREATE TABLE IF NOT EXISTS signup_verifications (
+  id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  email      VARCHAR(190) NOT NULL,
+  code_id    INT UNSIGNED NOT NULL,
+  token_hash CHAR(64) NOT NULL,
+  expires_at DATETIME NOT NULL,
+  used_at    DATETIME NULL,
+  created_at DATETIME NOT NULL,
+  KEY idx_token (token_hash),
+  KEY idx_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

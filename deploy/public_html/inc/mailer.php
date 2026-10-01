@@ -26,7 +26,7 @@ function mail_queue(
     $pdo = db();
 
     // Respect unsubscribe, except for access-critical mail people still need.
-    $alwaysSend = ['welcome', 'purchase_access', 'access_code', 'password_reset', 'test'];
+    $alwaysSend = ['welcome', 'purchase_access', 'access_code', 'password_reset', 'test', 'signup_confirm'];
     if (!in_array($type, $alwaysSend, true) && mail_is_opted_out($toAddress)) {
         $ins = $pdo->prepare(
             'INSERT INTO email_log (user_id, email_type, to_address, subject, status, attempts, created_at, error)

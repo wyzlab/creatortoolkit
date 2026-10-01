@@ -10,6 +10,8 @@
 declare(strict_types=1);
 require_once __DIR__ . '/../inc/bootstrap.php';
 require_once __DIR__ . '/../inc/codes.php';
+require_once __DIR__ . '/../inc/mailer.php';
+require_once __DIR__ . '/../inc/signup-verify.php';
 
 require_post();
 csrf_check();
@@ -71,5 +73,20 @@ if ($row['status'] === 'claimed') {
         'message' => 'This code is already set up. Please log in with your email and password.'], 200);
 }
 
-// Valid, unclaimed, unexpired: proceed to set a password.
+// Valid, unclaimed, unexpired, new email.
+// A universal (shared) code is a secret anyone could type with any email, so we
+// confirm the email first: email a one-time link rather than setting a password
+// inline. Individual codes were delivered to a specific email already, so they
+// keep the direct path.
+if ($row['batch_label'] === '__universal__') {
+    $link = create_signup_verification(db(), $email, (int)$row['id']);
+    if ($link !== null) {
+        send_signup_confirm_email($email, $link);
+    }
+    json_out(['valid' => true, 'needs_password' => false, 'needs_confirmation' => true,
+        'message' => 'Almost there — we emailed a confirmation link to ' . $email
+            . '. Click it to set your password and start. (Check spam if you do not see it.)'], 200);
+}
+
+// Individual code: proceed straight to setting a password.
 json_out(['valid' => true, 'needs_password' => true], 200);

@@ -14,14 +14,28 @@ require_once __DIR__ . '/../inc/tools.php';
 require_once __DIR__ . '/../inc/wyzai.php';
 require_once __DIR__ . '/../inc/mailer.php';
 require_once __DIR__ . '/../inc/codes.php';
+require_once __DIR__ . '/../inc/signup-verify.php';
 
 require_post();
 csrf_check();
 
 $in       = json_input();
-$email    = normalize_email((string)($in['email'] ?? ''));
-$code     = (string)($in['code'] ?? '');
 $password = (string)($in['password'] ?? '');
+
+// Authorisation comes from one of two paths:
+//  - a confirmed universal-code session: the person already proved they own the
+//    email by clicking the emailed link, so email + code_id come from the session;
+//  - the direct email + code path, used by individual codes delivered to an email.
+$confirmed = signup_confirmed_session();
+if ($confirmed !== null) {
+    $email  = $confirmed['email'];
+    $codeId = (int)$confirmed['code_id'];
+    $code   = null;
+} else {
+    $email  = normalize_email((string)($in['email'] ?? ''));
+    $code   = (string)($in['code'] ?? '');
+    $codeId = null;
+}
 
 rate_limit_guard('set-password', $email, 8);
 
@@ -34,23 +48,38 @@ if (strlen($password) < 10) {
 }
 
 $pdo = db();
-$lookup = code_lookup($code);
 
 $universalJustFilled = null;   // set if this sign-up fills a capped universal code
 
 try {
     $pdo->beginTransaction();
 
-    // Lock the code row and confirm it is still claimable.
-    $sel = $pdo->prepare(
-        'SELECT id, status, expires_at, batch_label, code_display FROM access_codes WHERE code_lookup = ? FOR UPDATE'
-    );
-    $sel->execute([$lookup]);
+    // Lock the code row and confirm it is still claimable. The confirmed path
+    // locks by id (we have no raw code there); the direct path by code_lookup.
+    if ($confirmed !== null) {
+        $sel = $pdo->prepare(
+            'SELECT id, status, expires_at, batch_label, code_display FROM access_codes WHERE id = ? FOR UPDATE'
+        );
+        $sel->execute([$codeId]);
+    } else {
+        $sel = $pdo->prepare(
+            'SELECT id, status, expires_at, batch_label, code_display FROM access_codes WHERE code_lookup = ? FOR UPDATE'
+        );
+        $sel->execute([code_lookup($code)]);
+    }
     $codeRow = $sel->fetch();
 
     // A universal code (batch "__universal__") is shared: it stays unclaimed
     // and many buyers can use it. Revoking it (status revoked) disables it.
     $isUniversal = $codeRow && ($codeRow['batch_label'] === '__universal__');
+
+    // A universal (shared) code can ONLY be claimed after email confirmation.
+    // This blocks posting email + universal code straight to this endpoint to
+    // skip the emailed link.
+    if ($isUniversal && $confirmed === null) {
+        $pdo->rollBack();
+        fail('Please confirm your email first — we sent you a link. Check your inbox (and spam).', 409);
+    }
 
     if (!$codeRow
         || $codeRow['status'] !== 'unclaimed'
@@ -137,6 +166,7 @@ try {
     record_redemption($pdo, (int)$codeRow['id'], $userId, $email, $codeRow['batch_label'] ?? null);
 
     $pdo->commit();
+    clear_signup_confirmed();   // one-time: the confirmed session is now spent
 } catch (\Throwable $ex) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();

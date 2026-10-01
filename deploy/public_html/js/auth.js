@@ -44,7 +44,14 @@
       try {
         if (stage === 'verify') {
           var r = await T.apiPost('/api/verify-code.php', { email: email, code: code });
-          if (r.valid && r.needs_password) {
+          if (r.valid && r.needs_confirmation) {
+            // Universal (webinar) code: we emailed a confirmation link. Don't
+            // reveal the password step — the link does that after confirming.
+            T.setNotice(notice, r.message || 'Check your email for a confirmation link to finish.', 'success');
+            claimForm.email.readOnly = true;
+            claimForm.code.readOnly = true;
+            claimSubmit.hidden = true;
+          } else if (r.valid && r.needs_password) {
             // Reveal the password field and switch this form to stage two.
             pwStep.hidden = false;
             claimForm.email.readOnly = true;
@@ -129,11 +136,15 @@
       var btn = spForm.querySelector('button[type="submit"]');
       btn.disabled = true;
       try {
-        var r = await T.apiPost('/api/set-password.php', {
-          email: spForm.email.value.trim(),
-          code: spForm.code.value.trim(),
-          password: pw
-        });
+        // Confirmed mode (universal flow) posts only the password — the server
+        // reads the confirmed email + code from the session. Direct mode sends
+        // the email and code fields.
+        var payload = { password: pw };
+        var emailEl = spForm.querySelector('[name="email"]');
+        var codeEl  = spForm.querySelector('[name="code"]');
+        if (emailEl) { payload.email = emailEl.value.trim(); }
+        if (codeEl)  { payload.code  = codeEl.value.trim(); }
+        var r = await T.apiPost('/api/set-password.php', payload);
         window.location.href = r.redirect || '/dashboard.php';
       } catch (e) {
         T.setNotice(spNotice, e.message, 'error');

@@ -8,6 +8,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/inc/bootstrap.php';
 require_once __DIR__ . '/inc/guard.php';
+require_once __DIR__ . '/inc/signup-verify.php';
 
 if (is_logged_in()) {
     redirect('/dashboard.php');
@@ -18,6 +19,10 @@ $pageDesc  = 'Set up your DIY Creator Starter Toolkit.';
 $bodyClass = 'page-auth';
 $pageScripts = ['/js/auth.js'];
 
+// If the person just confirmed their email (universal-code flow), skip straight
+// to choosing a password — their email and code are authorised in the session.
+$confirmed = signup_confirmed_session();
+
 // Optional prefill from a link, e.g. /set-password.php?email=...
 $prefillEmail = isset($_GET['email']) ? normalize_email((string)$_GET['email']) : '';
 
@@ -25,6 +30,26 @@ require __DIR__ . '/inc/head.php';
 ?>
 <div class="wrap wrap--narrow auth" data-auth="setpw">
   <div class="auth__card">
+<?php if ($confirmed !== null): ?>
+    <span class="badge badge--done" style="display:block;width:max-content;margin:0 auto var(--space-md)">Email confirmed</span>
+    <h1 class="auth__title">Choose your password</h1>
+    <p class="auth__lede">You confirmed <strong><?= e($confirmed['email']) ?></strong>. Pick a password to open your toolkit.</p>
+
+    <div class="notice" data-notice hidden></div>
+
+    <form data-form="setpw-standalone" data-confirmed="1" novalidate>
+      <div class="field">
+        <label class="field__label" for="sp-pw">Choose a password</label>
+        <div class="pw-field">
+          <input class="input" id="sp-pw" name="password" type="password"
+                 autocomplete="new-password" minlength="10" required>
+          <button type="button" class="pw-toggle" data-pw-toggle aria-controls="sp-pw" aria-pressed="false" aria-label="Show password">Show</button>
+        </div>
+        <span class="field__hint">At least 10 characters. That is the only rule.</span>
+      </div>
+      <button class="btn btn--primary btn--block" type="submit">Set password and start</button>
+    </form>
+<?php else: ?>
     <h1 class="auth__title">Set up your toolkit</h1>
     <p class="auth__lede">Enter your email and access code, then choose a password.</p>
 
@@ -53,6 +78,7 @@ require __DIR__ . '/inc/head.php';
       </div>
       <button class="btn btn--primary btn--block" type="submit">Set password and start</button>
     </form>
+<?php endif; ?>
 
     <p class="text-center mt-lg"><a href="/index.php">Already set up? Log in.</a></p>
   </div>
