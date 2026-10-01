@@ -10,6 +10,47 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/settings.php';
+
+/**
+ * The effective mail config: the file config (config/mail.php) overlaid with any
+ * admin-managed values in the database (app_settings, "mail_" keys). This lets
+ * the SMTP provider be set from the admin console without filesystem access.
+ * The password is only overridden when a non-empty one is stored.
+ */
+function mail_config(): array
+{
+    $cfg = require CONFIG_DIR . '/mail.php';
+    try {
+        $pdo = db();
+        if (!app_settings_supported($pdo)) { return $cfg; }
+        $map = [
+            'mail_host'       => 'host',
+            'mail_port'       => 'port',
+            'mail_encryption' => 'encryption',
+            'mail_username'   => 'username',
+            'mail_password'   => 'password',
+            'mail_from_email' => 'from_email',
+            'mail_from_name'  => 'from_name',
+            'mail_reply_to'   => 'reply_to',
+        ];
+        foreach ($map as $k => $dest) {
+            $v = setting_get($pdo, $k);
+            if ($v !== null && $v !== '') {
+                $cfg[$dest] = $dest === 'port' ? (int)$v : $v;
+            }
+        }
+        $en = setting_get($pdo, 'mail_enabled');
+        if ($en !== null && $en !== '') {
+            $cfg['enabled'] = ($en === '1' || strtolower($en) === 'true');
+        }
+    } catch (\Throwable $e) {
+        // DB unavailable: fall back to the file config unchanged.
+    }
+    if (empty($cfg['reply_to'])) { $cfg['reply_to'] = $cfg['from_email'] ?? ''; }
+    return $cfg;
+}
+
 /**
  * Queue an email (and send it if the mailer is enabled and PHPMailer is
  * present). Returns the email_log row id.
@@ -48,7 +89,7 @@ function mail_queue(
     $ins->execute([$userId, $type, $toAddress, $subject, 'queued', now_dt()]);
     $id = (int)$pdo->lastInsertId();
 
-    $cfg = require CONFIG_DIR . '/mail.php';
+    $cfg = mail_config();
     if (empty($cfg['enabled'])) {
         // Deliberately not sending yet. The queued row is the record.
         return $id;

@@ -263,28 +263,69 @@
   }
 
   // ── Email test ───────────────────────────────────────────────────────
-  // ── Email test ───────────────────────────────────────────────────────
-  // Show which provider is live (Hostinger / EmailIt / …) and whether it is on.
-  (async function loadMailStatus() {
+  // ── Email provider (SMTP) + status ───────────────────────────────────
+  function renderMailStatus(s) {
     var el = T.el('[data-mail-status]', root);
-    if (!el) return;
-    try {
-      var s = await T.apiGet('/api/admin/get-mail-status.php');
+    if (el) {
       var msg, kind;
       if (!s.configured) {
-        msg = 'Email is not configured yet — messages are only logged, not sent. Add mail.local.php to switch it on.';
+        msg = 'Email is not configured yet — messages are only logged, not sent. Fill in the provider above and save.';
         kind = null;
       } else if (!s.enabled) {
-        msg = 'Provider: ' + s.provider + ' (' + s.host + ':' + s.port + '), from ' + s.from +
-              ' — but sending is OFF (log-only). Set enabled=true to send.';
+        msg = 'Provider: ' + s.provider + ' (' + s.host + ':' + s.port + ') — but sending is OFF (log-only). Turn it on above.';
         kind = 'error';
       } else {
         msg = 'Live email provider: ' + s.provider + ' (' + s.host + ':' + s.port + '), sending as ' + s.from + '.';
         kind = 'success';
       }
       T.setNotice(el, msg, kind);
-    } catch (e) { /* leave hidden */ }
+    }
+    // Prefill the provider form with the current effective config.
+    var f = T.el('[data-form="mailcfg"]', root);
+    if (f && s.configured) {
+      if (s.host) f.host.value = s.host;
+      if (s.port) f.port.value = s.port;
+      if (s.encryption) f.encryption.value = s.encryption;
+      if (s.username) f.username.value = s.username;
+      if (s.from) f.from_email.value = s.from;
+      if (s.from_name) f.from_name.value = s.from_name;
+      f.enabled.checked = !!s.enabled;
+      if (s.password_set) { f.password.placeholder = 'A password is saved — leave blank to keep it'; }
+    }
+  }
+  (async function loadMailStatus() {
+    try { renderMailStatus(await T.apiGet('/api/admin/get-mail-status.php')); }
+    catch (e) { /* leave hidden */ }
   })();
+
+  var mailForm = T.el('[data-form="mailcfg"]', root);
+  if (mailForm) {
+    mailForm.addEventListener('submit', async function (ev) {
+      ev.preventDefault();
+      var notice = T.el('[data-mailcfg-notice]', root);
+      var btn = mailForm.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      T.setNotice(notice, 'Saving...', null);
+      try {
+        var r = await T.apiPost('/api/admin/set-mail-config.php', {
+          enabled:    mailForm.enabled.checked,
+          host:       mailForm.host.value.trim(),
+          port:       parseInt(mailForm.port.value, 10) || 0,
+          encryption: mailForm.encryption.value,
+          username:   mailForm.username.value.trim(),
+          password:   mailForm.password.value,
+          from_email: mailForm.from_email.value.trim(),
+          from_name:  mailForm.from_name.value.trim()
+        });
+        mailForm.password.value = '';
+        T.setNotice(notice, 'Saved. ' + (r.enabled ? 'Sending is ON via ' + r.provider + '. Send a test below.' : 'Saved as log-only (sending off).'), 'success');
+        // Refresh the status line.
+        try { renderMailStatus(await T.apiGet('/api/admin/get-mail-status.php')); } catch (e) {}
+      } catch (e) {
+        T.setNotice(notice, e.message, 'error');
+      } finally { btn.disabled = false; }
+    });
+  }
 
   var testForm = T.el('[data-form="testmail"]', root);
   if (testForm) {

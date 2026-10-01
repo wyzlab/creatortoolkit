@@ -158,10 +158,58 @@ require __DIR__ . '/../inc/head.php';
     </div>
   </section>
 
+  <!-- Email provider (SMTP) -->
+  <section class="card admin-section" data-mailcfg>
+    <h2>Email provider (SMTP)</h2>
+    <p class="muted">Where your toolkit sends email from (welcome, set-password, webinar confirmation). Defaults below are for EmailIt on the wyzcore domain — paste your EmailIt SMTP credential and save. Stored safely in the database; the password is never shown again.</p>
+    <p class="notice" data-mailcfg-status hidden></p>
+    <form data-form="mailcfg" class="admin-form">
+      <div class="field">
+        <label class="field__label" for="mc-host">SMTP host</label>
+        <input class="input" id="mc-host" name="host" type="text" value="smtp.emailit.com" autocomplete="off">
+      </div>
+      <div class="field">
+        <label class="field__label" for="mc-port">Port</label>
+        <input class="input" id="mc-port" name="port" type="number" value="587" min="1" max="65535">
+        <span class="field__hint">EmailIt: 587 with TLS (or 465 with SSL).</span>
+      </div>
+      <div class="field">
+        <label class="field__label" for="mc-enc">Encryption</label>
+        <select class="input" id="mc-enc" name="encryption">
+          <option value="tls">TLS (port 587)</option>
+          <option value="ssl">SSL (port 465)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="field__label" for="mc-user">SMTP username</label>
+        <input class="input" id="mc-user" name="username" type="text" value="emailit" autocomplete="off">
+      </div>
+      <div class="field">
+        <label class="field__label" for="mc-pass">SMTP password / credential</label>
+        <input class="input" id="mc-pass" name="password" type="password" autocomplete="off"
+               placeholder="Paste to set — leave blank to keep the current one">
+      </div>
+      <div class="field">
+        <label class="field__label" for="mc-from">From address</label>
+        <input class="input" id="mc-from" name="from_email" type="email" value="hello@wyzcore.com" autocomplete="off">
+        <span class="field__hint">Must be on a domain you verified in EmailIt (SPF + DKIM).</span>
+      </div>
+      <div class="field">
+        <label class="field__label" for="mc-fromname">From name</label>
+        <input class="input" id="mc-fromname" name="from_name" type="text" value="WyzCore Academy" autocomplete="off">
+      </div>
+      <div class="field">
+        <label class="field__label"><input type="checkbox" name="enabled" value="1"> Sending is ON (uncheck to log-only)</label>
+      </div>
+      <button class="btn btn--cta" type="submit">Save email settings</button>
+    </form>
+    <div class="notice" data-mailcfg-notice hidden></div>
+  </section>
+
   <!-- Email test -->
   <section class="card admin-section">
     <h2>Email test</h2>
-    <p class="muted">Once you have set up email (mail.local.php), send yourself a test to confirm it works.</p>
+    <p class="muted">After saving the provider above, send yourself a test to confirm it works.</p>
     <p class="notice" data-mail-status hidden></p>
     <form data-form="testmail" class="admin-form">
       <div class="field">
